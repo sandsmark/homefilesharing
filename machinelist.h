@@ -16,6 +16,7 @@ public:
 
 private slots:
     void onDatagram();
+    void connectToHost();
 
 private:
     QUdpSocket m_socket;

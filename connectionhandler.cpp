@@ -20,8 +20,6 @@ ConnectionHandler::ConnectionHandler()
         generateKey();
     }
 
-    m_digest = m_certificate.digest(QCryptographicHash::Sha3_256).toHex();
-
     m_pingTimer.setInterval(1000);
     connect(&m_pingTimer, &QTimer::timeout, this, &ConnectionHandler::sendPing);
     m_pingTimer.start();
@@ -31,7 +29,7 @@ void ConnectionHandler::sendPing()
 {
     QByteArray datagram(PING_HEADER);
     datagram += ';' + QSysInfo::machineHostName().toUtf8();
-    datagram += ';' + m_digest;
+    datagram += ';' + m_certificate.toDer().toBase64();
     m_pingSocket.writeDatagram(datagram, QHostAddress::Broadcast, PING_PORT);
 }
 

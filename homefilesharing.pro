@@ -27,10 +27,14 @@ SOURCES += \
         main.cpp \
         machinelist.cpp \
     connection.cpp \
-    connectionhandler.cpp
+    connectionhandler.cpp \
+    randomart.cpp \
+    connectdialog.cpp
 
 HEADERS += \
         machinelist.h \
     connection.h \
     connectionhandler.h \
-    common.h
+    common.h \
+    randomart.h \
+    connectdialog.h
