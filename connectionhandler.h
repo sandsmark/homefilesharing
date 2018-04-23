@@ -8,6 +8,8 @@
 
 #include "host.h"
 
+class Connection;
+
 class ConnectionHandler : public QObject
 {
     Q_OBJECT
@@ -16,6 +18,7 @@ public:
     ConnectionHandler(QObject *parent);
 
     void trustHost(const Host &host);
+    Connection *connectToHost(const Host &host);
 
 signals:
     void pingFromHost(const Host &host);

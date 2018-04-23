@@ -15,5 +15,10 @@ struct Host {
     }
 };
 
+static inline uint qHash(const Host &host) {
+    return qHash(host.certificate);
+}
+
+
 
 #endif // HOST_H

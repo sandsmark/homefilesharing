@@ -1,6 +1,7 @@
 #include "connectionhandler.h"
 
 #include "common.h"
+#include "connection.h"
 
 #include <openssl/x509.h>
 #include <openssl/pem.h>
@@ -55,6 +56,11 @@ void ConnectionHandler::trustHost(const Host &host)
     settings.setValue("name", host.name);
     settings.setValue("address", host.address.toString());
     settings.setValue("certificate", host.certificate.toPem());
+}
+
+Connection *ConnectionHandler::connectToHost(const Host &host)
+{
+    return new Connection(this, host, m_certificate, m_key);
 }
 
 void ConnectionHandler::sendPing()

@@ -72,5 +72,47 @@ void MainWindow::onHostSelectionChanged(int row)
         return;
     }
 
-    m_trustButton->setEnabled(!m_visibleHosts[row].trusted);
+    const Host &host = m_visibleHosts[row];
+
+    if (!host.trusted) {
+        m_trustButton->setEnabled(true);
+        return;
+    }
+
+    m_trustButton->setEnabled(false);
+
+    if (m_connections.contains(host) && !m_connections[host]->isConnected()) {
+        m_connections.take(host)->deleteLater();
+    }
+
+    if (!m_connections.contains(host)) {
+        m_connections[host] = m_connectionHandler->connectToHost(host);
+        connect(m_connections[host], &Connection::connectionEstablished, this, &MainWindow::onConnected);
+    }
+
+
+    if (m_connections[host] == m_currentConnection) {
+        return;
+    }
+
+    if (m_currentConnection) {
+        disconnect(m_currentConnection, &Connection::listingFinished, this, nullptr);
+    }
+
+    m_currentConnection = m_connections[host];
+    connect(m_currentConnection, &Connection::listingFinished, this, &MainWindow::onListingFinished);
+}
+
+void MainWindow::onListingFinished(const QString &path, const QStringList &names)
+{
+    qDebug() << path << names;
+}
+
+void MainWindow::onConnected(Connection *connection)
+{
+    qDebug() << "connected" << connection;
+    if (connection != m_currentConnection) {
+        qWarning() << "Wrong connection";
+        return;
+    }
 }
