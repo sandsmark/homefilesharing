@@ -29,7 +29,8 @@ SOURCES += \
     connection.cpp \
     connectionhandler.cpp \
     randomart.cpp \
-    connectdialog.cpp
+    connectdialog.cpp \
+    mainwindow.cpp
 
 HEADERS += \
         machinelist.h \
@@ -37,4 +38,5 @@ HEADERS += \
     connectionhandler.h \
     common.h \
     randomart.h \
-    connectdialog.h
+    connectdialog.h \
+    mainwindow.h

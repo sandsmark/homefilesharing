@@ -5,6 +5,7 @@
 #include <openssl/x509.h>
 #include <openssl/pem.h>
 #include <openssl/bio.h>
+#include <openssl/err.h>
 #include <memory>
 
 #include <QMessageBox>
@@ -15,7 +16,7 @@ ConnectionHandler::ConnectionHandler()
 {
     QSettings settings;
     m_certificate = QSslCertificate(settings.value("privcert").toByteArray());
-    m_key = QSslKey(settings.value("privkey").toByteArray(), QSsl::Rsa);
+    m_key = QSslKey(settings.value("privkey").toByteArray(), QSsl::Ec);
     if (m_certificate.isNull() || m_key.isNull()) {
         generateKey();
     }
@@ -35,44 +36,39 @@ void ConnectionHandler::sendPing()
 
 
 using BN_ptr = std::unique_ptr<BIGNUM, decltype(&::BN_free)>;
-using RSA_ptr = std::unique_ptr<RSA, decltype(&::RSA_free)>;
+using EC_KEY_ptr = std::unique_ptr<EC_KEY, decltype(&::EC_KEY_free)>;
 using EVP_KEY_ptr = std::unique_ptr<EVP_PKEY, decltype(&::EVP_PKEY_free)>;
 using BIO_FILE_ptr = std::unique_ptr<BIO, decltype(&::BIO_free)>;
 using X509_ptr = std::unique_ptr<X509, decltype(&::X509_free)>;
 
 void ConnectionHandler::generateKey()
 {
-    RSA_ptr rsa(RSA_new(), ::RSA_free);
-    BN_ptr bn(BN_new(), ::BN_free);
-
-    int rc = BN_set_word(bn.get(), RSA_F4);
-    Q_ASSERT(rc == 1);
-
-    // Generate key
-    if (!RSA_generate_key_ex(rsa.get(), 2048, bn.get(), NULL)) {
-        QMessageBox::warning(nullptr, "Error creating certificate", "Failed to generate RSA key");
+    EC_KEY_ptr ecKey(EC_KEY_new_by_curve_name(NID_X9_62_prime256v1), ::EC_KEY_free);
+    if (!ecKey) {
+        qWarning() << ERR_error_string(ERR_get_error(), NULL);
+        QMessageBox::warning(nullptr, "Error creating certificate", "Failed to create EC key with required curve");
         return;
     }
 
-    // Convert RSA to PKEY
+    EC_KEY_set_asn1_flag(ecKey.get(), OPENSSL_EC_NAMED_CURVE);
+
+    if (!EC_KEY_generate_key(ecKey.get())) {
+        QMessageBox::warning(nullptr, "Error creating certificate", "Failed to generate EC key");
+        return;
+
+    }
+
     EVP_KEY_ptr pkey(EVP_PKEY_new(), ::EVP_PKEY_free);
-    rc = EVP_PKEY_set1_RSA(pkey.get(), rsa.get());
+    int rc = EVP_PKEY_set1_EC_KEY(pkey.get(), ecKey.get());
     Q_ASSERT(rc == 1);
 
 
-    EVP_PKEY_assign_RSA(pkey.get(), rsa.release());
+    EVP_PKEY_assign_EC_KEY(pkey.get(), ecKey.release());
     X509_ptr x509(X509_new(), ::X509_free);
 
-    ASN1_INTEGER_set(X509_get_serialNumber(x509.get()), 1);
     X509_gmtime_adj(X509_get_notBefore(x509.get()), 0); // not before current time
-    X509_gmtime_adj(X509_get_notAfter(x509.get()), 31536000L); // not after a year from this point
+    X509_gmtime_adj(X509_get_notAfter(x509.get()), 315360000L); // 10 years validity
     X509_set_pubkey(x509.get(), pkey.get());
-
-    X509_NAME *name = X509_get_subject_name(x509.get());
-    X509_NAME_add_entry_by_txt(name, "C", MBSTRING_ASC, (unsigned char *)"NO", -1, -1, 0);
-    X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, (unsigned char *)"Iskrembilen", -1, -1, 0);
-    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (unsigned char *)"Random", -1, -1, 0);
-    X509_set_issuer_name(x509.get(), name);
 
     X509_sign(x509.get(), pkey.get(), EVP_sha1());
     BIO_FILE_ptr bp_private(BIO_new(BIO_s_mem()), ::BIO_free);
@@ -97,7 +93,7 @@ void ConnectionHandler::generateKey()
 
     size = BIO_get_mem_data(bp_private.get(), &buffer);
     q_check_ptr(buffer);
-    m_key = QSslKey(QByteArray(buffer, size), QSsl::Rsa);
+    m_key = QSslKey(QByteArray(buffer, size), QSsl::Ec);
     if(m_key.isNull()) {
         QMessageBox::warning(nullptr, "Error creating private key", "Failed to generate a random private key");
         return;
