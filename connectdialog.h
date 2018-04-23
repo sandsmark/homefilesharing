@@ -2,19 +2,21 @@
 #define CONNECTDIALOG_H
 
 #include <QDialog>
-#include <QSslCertificate>
+
+#include "host.h"
 
 class RandomArt;
 
 class ConnectDialog : public QDialog
 {
 public:
-    ConnectDialog(const QString &address, const QString &hostname, const QSslCertificate &certificate);
+    ConnectDialog(const Host &host);
 
 private:
     RandomArt *m_randomArt;
     QPushButton *m_connectButton;
     QPushButton *m_cancelButton;
+    Host m_currentHost;
 };
 
 #endif // CONNECTDIALOG_H

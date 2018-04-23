@@ -39,4 +39,5 @@ HEADERS += \
     common.h \
     randomart.h \
     connectdialog.h \
-    mainwindow.h
+    mainwindow.h \
+    host.h

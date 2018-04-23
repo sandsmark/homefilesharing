@@ -15,12 +15,11 @@ public:
     ~MachineList();
 
 private slots:
-    void onDatagram();
-    void connectToHost();
+//    void onDatagram();
+//    void connectToHost();
 
 private:
     QUdpSocket m_socket;
-    QListWidget *m_list;
 };
 
 #endif // MACHINELIST_H

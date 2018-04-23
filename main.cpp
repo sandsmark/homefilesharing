@@ -1,5 +1,4 @@
-#include "machinelist.h"
-#include "connectionhandler.h"
+#include "mainwindow.h"
 
 #include <QApplication>
 
@@ -9,9 +8,12 @@ int main(int argc, char *argv[])
     a.setOrganizationName("Martin Sandsmark");
     a.setApplicationName("homefilesharing");
 
-    ConnectionHandler h;
+//    ConnectionHandler h;
 
-    MachineList w;
+//    MachineList w;
+//    w.show();
+
+    MainWindow w;
     w.show();
 
     return a.exec();

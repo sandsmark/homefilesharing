@@ -11,8 +11,9 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QHostInfo>
+#include <QNetworkInterface>
 
-ConnectionHandler::ConnectionHandler()
+ConnectionHandler::ConnectionHandler(QObject *parent) : QObject(parent)
 {
     QSettings settings;
     m_certificate = QSslCertificate(settings.value("privcert").toByteArray());
@@ -24,6 +25,36 @@ ConnectionHandler::ConnectionHandler()
     m_pingTimer.setInterval(1000);
     connect(&m_pingTimer, &QTimer::timeout, this, &ConnectionHandler::sendPing);
     m_pingTimer.start();
+
+    m_pingSocket.bind(PING_PORT, QUdpSocket::ShareAddress);
+
+    connect(&m_pingSocket, &QUdpSocket::readyRead, this, &ConnectionHandler::onDatagram);
+
+    settings.beginGroup("trusted");
+
+    for (const QString &certhash : settings.childGroups()) {
+        settings.beginGroup(certhash);
+
+        Host host;
+        host.name = settings.value("name").toString();
+        host.address = QHostAddress(settings.value("address").toString());
+        host.certificate = QSslCertificate(settings.value("certificate").toByteArray());
+        host.trusted = true;
+        m_trustedHosts.append(host);
+
+        settings.endGroup();
+    }
+}
+
+void ConnectionHandler::trustHost(const Host &host)
+{
+    QSettings settings;
+    settings.beginGroup("trusted");
+    settings.beginGroup(host.certificate.digest(QCryptographicHash::Sha3_224));
+
+    settings.setValue("name", host.name);
+    settings.setValue("address", host.address.toString());
+    settings.setValue("certificate", host.certificate.toPem());
 }
 
 void ConnectionHandler::sendPing()
@@ -104,3 +135,58 @@ void ConnectionHandler::generateKey()
     settings.setValue("privkey", m_key.toPem());
     qDebug() << "Generated key";
 }
+
+
+
+void ConnectionHandler::onDatagram()
+{
+    QList<QHostAddress> ourAddresses = QNetworkInterface::allAddresses();
+    while (m_pingSocket.hasPendingDatagrams()) {
+        QByteArray datagram;
+        datagram.resize(m_pingSocket.pendingDatagramSize());
+
+        QHostAddress sender;
+        m_pingSocket.readDatagram(datagram.data(), datagram.size(), &sender);
+
+        // Convoluted because QHostAddress doesn't handle ipv6 stuff nicely by default
+        bool isOurs = false;
+        for (const QHostAddress &address : ourAddresses) {
+            if (address.isEqual(sender, QHostAddress::TolerantConversion)) {
+                isOurs = true;
+                break;
+            }
+        }
+
+        if (isOurs) {
+            qDebug() << "Got ping from ourselves";
+//            continue;
+        }
+
+        if (!datagram.startsWith(PING_HEADER)) {
+            qDebug() << "Invalid header";
+            continue;
+        }
+
+        datagram.remove(0, sizeof(PING_HEADER));
+
+        QList<QByteArray> parts = datagram.split(';');
+        if (parts.count() != 2) {
+            qDebug() << "Invalid structure";
+            continue;
+        }
+
+        const QString hostname = QString::fromUtf8(parts[0]);
+        const QByteArray certEncoded = QByteArray::fromBase64(parts[1]);
+
+        Host host;
+        host.name = hostname;
+        host.address = sender;
+        host.certificate = QSslCertificate(certEncoded, QSsl::Der);
+        if (m_trustedHosts.contains(host)) {
+            host.trusted = true;
+        }
+
+        emit pingFromHost(host);
+    }
+}
+
