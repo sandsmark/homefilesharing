@@ -13,8 +13,9 @@
 #include <QSettings>
 #include <QHostInfo>
 #include <QNetworkInterface>
+#include <QSslSocket>
 
-ConnectionHandler::ConnectionHandler(QObject *parent) : QObject(parent)
+ConnectionHandler::ConnectionHandler(QObject *parent) : QTcpServer(parent)
 {
     QSettings settings;
     m_certificate = QSslCertificate(settings.value("privcert").toByteArray());
@@ -45,6 +46,8 @@ ConnectionHandler::ConnectionHandler(QObject *parent) : QObject(parent)
 
         settings.endGroup();
     }
+
+    listen(QHostAddress::Any, TRANSFER_PORT);
 }
 
 void ConnectionHandler::trustHost(const Host &host)
@@ -61,6 +64,24 @@ void ConnectionHandler::trustHost(const Host &host)
 Connection *ConnectionHandler::connectToHost(const Host &host)
 {
     return new Connection(this, host, m_certificate, m_key);
+}
+
+void ConnectionHandler::incomingConnection(qintptr handle)
+{
+    qDebug() << "Got incoming";
+
+    QSslSocket *serverSocket = new QSslSocket;
+    if (!serverSocket->setSocketDescriptor(handle)) {
+        qWarning() << "Failed to set descriptor" << handle;
+        delete serverSocket;
+        return;
+    }
+    serverSocket->setLocalCertificate(m_certificate);
+    serverSocket->setPrivateKey(m_key);
+
+    addPendingConnection(serverSocket);
+    connect(serverSocket, &QSslSocket::encrypted, this, &ConnectionHandler::onSslClientConnected);
+    serverSocket->startServerEncryption();
 }
 
 void ConnectionHandler::sendPing()
@@ -194,5 +215,35 @@ void ConnectionHandler::onDatagram()
 
         emit pingFromHost(host);
     }
+}
+
+void ConnectionHandler::onSslClientConnected()
+{
+    QSslSocket *sock = qobject_cast<QSslSocket*>(sender());
+    if (!sock) {
+        qWarning() << "Invalid sender";
+        return;
+    }
+    Host host;
+    host.address = sock->peerAddress();
+    host.certificate = sock->peerCertificate();
+    if (!m_trustedHosts.contains(host)) {
+        qWarning() << "Untrusted host";
+        sender()->deleteLater();
+        return;
+    }
+
+    qDebug() << "Client connected" << sender();
+}
+
+void ConnectionHandler::onClientError()
+{
+    QSslSocket *sock = qobject_cast<QSslSocket*>(sender());
+    if (!sock) {
+        qWarning() << "Invalid sender";
+        return;
+    }
+
+    qWarning() << "client error" << sock->errorString();
 }
 

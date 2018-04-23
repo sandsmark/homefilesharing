@@ -5,12 +5,14 @@
 #include <QSslKey>
 #include <QUdpSocket>
 #include <QTimer>
+#include <QTcpServer>
 
 #include "host.h"
 
 class Connection;
+class QTcpServer;
 
-class ConnectionHandler : public QObject
+class ConnectionHandler : public QTcpServer
 {
     Q_OBJECT
 
@@ -20,12 +22,17 @@ public:
     void trustHost(const Host &host);
     Connection *connectToHost(const Host &host);
 
+protected:
+    void incomingConnection(qintptr handle) override;
+
 signals:
     void pingFromHost(const Host &host);
 
 private slots:
     void sendPing();
     void onDatagram();
+    void onSslClientConnected();
+    void onClientError();
 
 private:
     void generateKey();

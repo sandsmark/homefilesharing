@@ -19,6 +19,7 @@ Connection::Connection(QObject *parent, const Host &host, const QSslCertificate 
 
     m_socket->connectToHostEncrypted(host.address.toString(), TRANSFER_PORT);
 
+    m_socket->ignoreSslErrors();
     connect(m_socket, &QSslSocket::disconnected, this, &Connection::disconnected);
     connect(m_socket, &QSslSocket::encrypted, this, &Connection::onEncrypted);
     connect(m_socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &Connection::onError);
@@ -44,5 +45,5 @@ void Connection::onEncrypted()
 
 void Connection::onError()
 {
-    qWarning() << m_socket->errorString();
+    qWarning() << "server error" << m_socket->errorString();
 }
