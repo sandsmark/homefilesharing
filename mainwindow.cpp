@@ -2,6 +2,7 @@
 
 #include "connectionhandler.h"
 #include "connectdialog.h"
+#include "randomart.h"
 
 #include <QSplitter>
 #include <QListWidget>
@@ -18,12 +19,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     splitter->addWidget(leftWidget);
 
     m_list = new QListWidget;
-    leftWidget->layout()->addWidget(m_list);
     m_trustButton = new QPushButton("Trust");
     m_trustButton->setEnabled(false);
-    leftWidget->layout()->addWidget(m_trustButton);
+
 
     m_connectionHandler = new ConnectionHandler(this);
+
+    RandomArt *ourRandomart = new RandomArt(m_connectionHandler->ourCertificate());
+
+    leftWidget->layout()->addWidget(m_list);
+    leftWidget->layout()->addWidget(m_trustButton);
+    leftWidget->layout()->addWidget(ourRandomart);
 
     connect(m_connectionHandler, &ConnectionHandler::pingFromHost, this, &MainWindow::onPingFromHost);
     connect(m_trustButton, &QPushButton::clicked, this, &MainWindow::onTrustClicked);

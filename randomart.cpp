@@ -3,6 +3,8 @@
 #include <QDebug>
 #include <iostream>
 
+#include <QSslCertificate>
+
 const char symbols[] = {
     ' ', '.', 'o', '+',
     '=', '*', 'B', 'O',
@@ -24,8 +26,10 @@ const char symbols[] = {
 #define HEIGHT 9
 
 
-RandomArt::RandomArt(const QByteArray &data)
+RandomArt::RandomArt(const QSslCertificate &cert)
 {
+    const QByteArray data = cert.digest(QCryptographicHash::Sha3_256);
+
     if (data.length() != 32) {
         qWarning() << "Invalid data" << data.length();
         return;
@@ -85,6 +89,7 @@ RandomArt::RandomArt(const QByteArray &data)
         Q_ASSERT(size_t(m_array[i]) < sizeof(symbols));
         m_data[i] = symbols[m_array[i]];
     }
+
     setMinimumSize(WIDTH * 15, HEIGHT * 15);
 }
 
@@ -103,7 +108,7 @@ void RandomArt::paintEvent(QPaintEvent *)
     for (int y=0; y<HEIGHT; y++) {
         for (int x=0; x<WIDTH; x++) {
             const QRect r(x * dx, y * dy, dx, dy);
-            painter.fillRect(r, QColor::fromHsv(m_array[x + y * WIDTH] * 11, 255, 255));
+            painter.fillRect(r, QColor::fromHsv(m_array[x + y * WIDTH] * 11, 255, 128));
 
             painter.drawText(r, Qt::AlignCenter, QString(m_data[x + y * WIDTH]));
         }

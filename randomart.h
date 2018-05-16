@@ -4,11 +4,13 @@
 #include <QObject>
 #include <QWidget>
 
+class QSslCertificate;
+
 class RandomArt : public QWidget
 {
     Q_OBJECT
 public:
-    explicit RandomArt(const QByteArray &data);
+    explicit RandomArt(const QSslCertificate &cert);
 
 signals:
 

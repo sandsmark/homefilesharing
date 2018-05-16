@@ -23,7 +23,7 @@ ConnectDialog::ConnectDialog(const Host &host) :
     l->addWidget(new QLabel("Certificate:"), 2, 0);
     l->addWidget(new QLabel(host.certificate.digest().toHex()), 2, 1);
 
-    m_randomArt = new RandomArt(host.certificate.digest(QCryptographicHash::Sha3_256));
+    m_randomArt = new RandomArt(host.certificate);
     l->addWidget(m_randomArt, 0, 2, 4, 1);
 
     QHBoxLayout *buttonsLayout = new QHBoxLayout;

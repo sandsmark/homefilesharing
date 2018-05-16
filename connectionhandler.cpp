@@ -66,6 +66,11 @@ Connection *ConnectionHandler::connectToHost(const Host &host)
     return new Connection(this, host, m_certificate, m_key);
 }
 
+const QSslCertificate &ConnectionHandler::ourCertificate() const
+{
+    return m_certificate;
+}
+
 void ConnectionHandler::incomingConnection(qintptr handle)
 {
     qDebug() << "Got incoming";

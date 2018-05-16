@@ -22,6 +22,8 @@ public:
     void trustHost(const Host &host);
     Connection *connectToHost(const Host &host);
 
+    const QSslCertificate &ourCertificate() const;
+
 protected:
     void incomingConnection(qintptr handle) override;
 
