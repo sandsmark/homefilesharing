@@ -50,6 +50,12 @@ ConnectionHandler::ConnectionHandler(QObject *parent) : QTcpServer(parent)
     listen(QHostAddress::Any, TRANSFER_PORT);
 }
 
+ConnectionHandler::~ConnectionHandler()
+{
+    m_pingSocket.close();
+    m_pingSocket.waitForDisconnected();
+}
+
 void ConnectionHandler::trustHost(const Host &host)
 {
     QSettings settings;

@@ -18,6 +18,7 @@ class ConnectionHandler : public QTcpServer
 
 public:
     ConnectionHandler(QObject *parent);
+    ~ConnectionHandler();
 
     void trustHost(const Host &host);
 
