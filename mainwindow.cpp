@@ -9,6 +9,9 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QMimeDatabase>
+#include <QSettings>
+#include <QStandardPaths>
+#include <QFileDialog>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -118,7 +121,6 @@ void MainWindow::onListingFinished(const QString &path, const QStringList &names
         } else {
             item->setIcon(QIcon::fromTheme(mimeDb.mimeTypeForFile(name).iconName()));
             item->setData(Qt::UserRole, size);
-            item->setText(name + "(" + QString::number(size) + ")");
         }
 
         m_fileList->addItem(item);
@@ -136,6 +138,17 @@ void MainWindow::onFileItemDoubleClicked(QListWidgetItem *item)
         updateFileList();
         return;
     }
+
+    QSettings settings;
+    QString lastPath = settings.value("lastsavepath", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).toString();
+
+    QString localPath = QFileDialog::getSaveFileName(this, "Where to save", lastPath + '/' + filename);
+    if (localPath.isEmpty()) {
+        return;
+    }
+
+    Connection *connection = new Connection(m_connectionHandler);
+    connection->download(currentHost(), m_currentPath + filename, localPath);
 }
 
 Host MainWindow::currentHost()
