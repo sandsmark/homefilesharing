@@ -27,7 +27,9 @@ Connection::Connection(ConnectionHandler *parent) :
     config.setLocalCertificate(ourCert);
     config.setPrivateKey(ourKey);
     m_socket->setSslConfiguration(config);
+    m_socket->ignoreSslErrors();
 
+    connect(m_socket, SIGNAL(sslErrors(QList<QSslError>)), m_socket, SLOT(ignoreSslErrors()));
     connect(m_socket, &QSslSocket::disconnected, this, &Connection::disconnected);
     connect(m_socket, &QSslSocket::disconnected, this, &Connection::onDisconnected);
     connect(m_socket, &QSslSocket::encrypted, this, &Connection::onEncrypted);
@@ -36,6 +38,7 @@ Connection::Connection(ConnectionHandler *parent) :
 
 void Connection::download(const Host &host, const QString &remotePath, const QString &localPath)
 {
+    qDebug() << "downloading" << remotePath << "from" << host.address;
     m_host = host;
     m_type = ReceiveFile;
     m_remotePath = remotePath;
@@ -46,6 +49,8 @@ void Connection::download(const Host &host, const QString &remotePath, const QSt
 
 void Connection::upload(const Host &host, const QString &remotePath, const QString &localPath)
 {
+    qDebug() << "uploading" << remotePath << "to" << host.address;
+
     m_host = host;
     m_type = ReceiveFile;
     m_remotePath = remotePath;
@@ -56,8 +61,10 @@ void Connection::upload(const Host &host, const QString &remotePath, const QStri
 
 void Connection::list(const Host &host, const QString &remotePath)
 {
+    qDebug() << "listing" << remotePath << "on" << host.address;
+
     m_host = host;
-    m_type = ReceiveFile;
+    m_type = ReceiveListing;
     m_remotePath = remotePath;
 
     m_socket->connectToHostEncrypted(host.address.toString(), TRANSFER_PORT);
@@ -79,6 +86,7 @@ void Connection::onEncrypted()
         deleteLater();
         return;
     }
+    qDebug() << "Encryption complete";
 
     m_host.address = m_socket->peerAddress();
 
@@ -93,25 +101,32 @@ void Connection::onEncrypted()
     QJsonObject request;
 
     switch (m_type) {
-    case Listing:
+    case ReceiveListing:
         request["command"] = "list";
         request["path"] = m_remotePath;
+        connect(m_socket, &QSslSocket::readyRead, this, &Connection::onReadyRead);
         break;
     case SendFile:
         request["command"] = "upload";
         request["path"] = m_remotePath;
+        connect(m_socket, &QSslSocket::bytesWritten, this, &Connection::onBytesWritten);
         break;
     case ReceiveFile:
         request["command"] = "download";
         request["path"] = m_remotePath;
+        connect(m_socket, &QSslSocket::readyRead, this, &Connection::onReadyRead);
         break;
 
     case Incoming:
+        return;
+
     default:
+        qDebug() << "Unexpected type" << m_type;
         return;
     }
 
-    m_socket->write(QJsonDocument(request).toJson(QJsonDocument::Compact));
+    qDebug() << "sending" << request;
+    m_socket->write(QJsonDocument(request).toJson(QJsonDocument::Compact) + "\n");
 }
 
 void Connection::onError()
@@ -153,12 +168,18 @@ void Connection::onReadyRead()
         return;
     }
 
-    if (m_type == Listing) {
-        if (!m_socket->canReadLine()) {
-            return;
+    if (m_type == ReceiveListing) {
+        qDebug() << "Listing, received data";
+        QStringList entries;
+        while (m_socket->canReadLine()) {
+            QString entry = QString::fromUtf8(m_socket->readLine()).trimmed();
+            if (!entry.isEmpty()) {
+                entries.append(entry);
+            }
         }
-        QString readData = QString::fromUtf8(m_socket->readLine());
-        emit listingReceived(m_remotePath, readData.split('\n'));
+        if (!entries.isEmpty()) {
+            emit listingReceived(m_remotePath, entries);
+        }
         return;
     }
 
@@ -198,7 +219,7 @@ void Connection::onBytesWritten(qint64 bytes)
         return;
     }
 
-    if (m_type == Listing) {
+    if (m_type == SendListing) {
         qDebug() << "Finished sending list";
         m_socket->disconnectFromHost();
         return;
@@ -237,14 +258,16 @@ void Connection::onBytesWritten(qint64 bytes)
     m_socket->write(m_file->read(TRANSFER_BYTE_SIZE));
 }
 
-void Connection::handleCommand(const QString &command, const QString &path)
+void Connection::handleCommand(const QString &command, QString path)
 {
+    path = m_basePath + QDir::cleanPath(path);
+
     qDebug() << "Got command" << command << "for" << path;
 
     if (command == "list") {
-        QString retData = QDir(path + QDir::cleanPath(path)).entryList().join('\n');
+        QString retData = QDir(path).entryList().join('\n') + "\n";
         m_socket->write(retData.toUtf8());
-        m_type = Listing;
+        m_type = SendListing;
         connect(m_socket, &QSslSocket::bytesWritten, this, &Connection::onBytesWritten);
         return;
     }

@@ -78,7 +78,13 @@ const QList<QSslCertificate> ConnectionHandler::trustedCertificates() const
 
 bool ConnectionHandler::isTrusted(const Host &host) const
 {
-    return m_trustedHosts.contains(host);
+    for (const Host &trustedHost : m_trustedHosts) {
+        if (trustedHost.certificate == host.certificate) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void ConnectionHandler::incomingConnection(qintptr handle)

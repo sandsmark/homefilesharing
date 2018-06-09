@@ -18,7 +18,8 @@ class Connection : public QObject
 public:
     enum Type {
         Incoming,
-        Listing,
+        ReceiveListing,
+        SendListing,
         ReceiveFile,
         SendFile
     };
@@ -48,7 +49,7 @@ private slots:
     void onBytesWritten(qint64 bytes);
 
 private:
-    void handleCommand(const QString &command, const QString &path);
+    void handleCommand(const QString &command, QString path);
 
     QPointer<QFile> m_file;
 
