@@ -236,14 +236,14 @@ void Connection::onBytesWritten(qint64 bytes)
     if (!m_file) {
         m_file = new QFile(m_localPath, this);
 
-        if (m_file->exists()) {
-            qWarning() << "Refusing to overwrite local file" << m_localPath;
+        if (!m_file->exists()) {
+            qWarning() << "Local file does not exist" << m_localPath;
             m_socket->disconnectFromHost();
             return;
         }
 
         if (!m_file->open(QIODevice::ReadOnly)) {
-            qWarning() << "Failed to open" << m_localPath << "for writing" << m_file->errorString();
+            qWarning() << "Failed to open" << m_localPath << "for reading" << m_file->errorString();
             m_socket->disconnectFromHost();
             return;
         }
@@ -263,6 +263,8 @@ void Connection::onBytesWritten(qint64 bytes)
 void Connection::handleCommand(const QString &command, QString path)
 {
     path = m_basePath + QDir::cleanPath(path);
+
+    m_localPath = path;
 
     qDebug() << "Got command" << command << "for" << path;
 
@@ -289,11 +291,10 @@ void Connection::handleCommand(const QString &command, QString path)
     } else if (command == "download") {
         m_type = SendFile;
         connect(m_socket, &QSslSocket::bytesWritten, this, &Connection::onBytesWritten);
+        onBytesWritten(0);
     } else  {
         qWarning() << "Unknown command" << command;
         m_socket->disconnectFromHost();
         return;
     }
-
-    m_localPath = path;
 }
