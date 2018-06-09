@@ -265,9 +265,17 @@ void Connection::handleCommand(const QString &command, QString path)
     qDebug() << "Got command" << command << "for" << path;
 
     if (command == "list") {
-        QString retData = QDir(path).entryList().join('\n') + "\n";
+        QString retData;
+        for (const QFileInfo &fi : QDir(path).entryInfoList()) {
+            retData += fi.fileName();
+            if (fi.isDir()) {
+                retData += '/';
+            }
+            retData += '\n';
+        }
         m_socket->write(retData.toUtf8());
         m_type = SendListing;
+
         connect(m_socket, &QSslSocket::bytesWritten, this, &Connection::onBytesWritten);
         return;
     }

@@ -8,6 +8,7 @@
 #include <QListWidget>
 #include <QVBoxLayout>
 #include <QPushButton>
+#include <QMimeDatabase>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -22,6 +23,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_trustButton = new QPushButton("Trust");
     m_trustButton->setEnabled(false);
 
+    m_fileList = new QListWidget;
+    splitter->addWidget(m_fileList);
+
 
     m_connectionHandler = new ConnectionHandler(this);
 
@@ -34,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(m_connectionHandler, &ConnectionHandler::pingFromHost, this, &MainWindow::onPingFromHost);
     connect(m_trustButton, &QPushButton::clicked, this, &MainWindow::onTrustClicked);
     connect(m_list, &QListWidget::currentRowChanged, this, &MainWindow::onHostSelectionChanged);
+    connect(m_fileList, &QListWidget::itemDoubleClicked, this, &MainWindow::onFileItemDoubleClicked);
 }
 
 void MainWindow::onPingFromHost(const Host &host)
@@ -87,39 +92,64 @@ void MainWindow::onHostSelectionChanged(int row)
 
     m_trustButton->setEnabled(false);
 
-    if (m_connections.contains(host) && !m_connections[host]->isConnected()) {
-        m_connections.take(host)->deleteLater();
-    }
+    m_currentPath = "/";
 
-    if (!m_connections.contains(host)) {
-        m_connections[host] = new Connection(m_connectionHandler);
-        m_connections[host]->list(host, "/");
-        connect(m_connections[host], &Connection::connectionEstablished, this, &MainWindow::onConnected);
-    }
-
-
-    if (m_connections[host] == m_currentConnection) {
-        return;
-    }
-
-    if (m_currentConnection) {
-        disconnect(m_currentConnection, &Connection::listingReceived, this, nullptr);
-    }
-
-    m_currentConnection = m_connections[host];
-    connect(m_currentConnection, &Connection::listingReceived, this, &MainWindow::onListingFinished);
+    updateFileList();
 }
 
 void MainWindow::onListingFinished(const QString &path, const QStringList &names)
 {
-    qDebug() << path << names;
-}
-
-void MainWindow::onConnected(Connection *connection)
-{
-    qDebug() << "connected" << connection;
-    if (connection != m_currentConnection) {
-        qWarning() << "Wrong connection";
+    if (path != m_currentPath) {
         return;
     }
+    QMimeDatabase mimeDb;
+    QIcon folderIcon = QIcon::fromTheme(mimeDb.mimeTypeForName("inode/directory").iconName());
+    for (const QString name : names) {
+        QListWidgetItem *item = new QListWidgetItem(name);
+        if (name.endsWith('/')) {
+            item->setIcon(folderIcon);
+        } else {
+            item->setIcon(QIcon::fromTheme(mimeDb.mimeTypeForFile(name).iconName()));
+        }
+
+        m_fileList->addItem(item);
+    }
+}
+
+void MainWindow::onFileItemDoubleClicked(QListWidgetItem *item)
+{
+    Q_ASSERT(item && !item->text().isEmpty());
+
+    const QString filename = item->text();
+
+    if (filename.endsWith('/')) {
+        m_currentPath += filename;
+        updateFileList();
+        return;
+    }
+}
+
+Host MainWindow::currentHost()
+{
+    int row = m_list->currentRow();
+    if (row < 0 || row >= m_visibleHosts.count()) {
+        qWarning() << "Invalid selection" << row;
+        return Host();
+    }
+
+    return m_visibleHosts[row];
+}
+
+void MainWindow::updateFileList()
+{
+    m_fileList->clear();
+
+    if (m_currentConnection) {
+        disconnect(m_currentConnection, &Connection::listingReceived, this, nullptr);
+        m_currentConnection->deleteLater();
+    }
+
+    m_currentConnection = new Connection(m_connectionHandler);
+    connect(m_currentConnection, &Connection::listingReceived, this, &MainWindow::onListingFinished);
+    m_currentConnection->list(currentHost(), m_currentPath);
 }

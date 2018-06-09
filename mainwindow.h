@@ -8,6 +8,7 @@
 #include "connection.h"
 
 class QListWidget;
+class QListWidgetItem;
 class QPushButton;
 
 class MainWindow : public QMainWindow
@@ -23,15 +24,21 @@ private slots:
     void onTrustClicked();
     void onHostSelectionChanged(int row);
     void onListingFinished(const QString &path, const QStringList &names);
-    void onConnected(Connection *connection);
+    void onFileItemDoubleClicked(QListWidgetItem *item);
 
 private:
+    Host currentHost();
+    void updateFileList();
+
     QListWidget *m_list;
     ConnectionHandler *m_connectionHandler;
     QList<Host> m_visibleHosts;
     QPushButton *m_trustButton;
-    QHash<Host, Connection*> m_connections;
     QPointer<Connection> m_currentConnection;
+
+    QListWidget *m_fileList;
+
+    QString m_currentPath;
 };
 
 #endif // MAINWINDOW_H
