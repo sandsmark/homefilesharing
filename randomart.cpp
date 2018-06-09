@@ -108,7 +108,7 @@ void RandomArt::paintEvent(QPaintEvent *)
     for (int y=0; y<HEIGHT; y++) {
         for (int x=0; x<WIDTH; x++) {
             const QRect r(x * dx, y * dy, dx, dy);
-            painter.fillRect(r, QColor::fromHsv(m_array[x + y * WIDTH] * 11, 255, 128));
+            painter.fillRect(r, QColor::fromHsv(m_array[x + y * WIDTH] * 11, 255, m_array[x + y * WIDTH]  ? 255 : 0));
 
             painter.drawText(r, Qt::AlignCenter, QString(m_data[x + y * WIDTH]));
         }
