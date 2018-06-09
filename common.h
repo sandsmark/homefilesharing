@@ -6,4 +6,6 @@
 
 #define TRANSFER_PORT 3333
 
+#define TRANSFER_BYTE_SIZE (10 * 1024 * 1024)
+
 #endif // COMMON_H

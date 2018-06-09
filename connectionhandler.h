@@ -20,9 +20,12 @@ public:
     ConnectionHandler(QObject *parent);
 
     void trustHost(const Host &host);
-    Connection *connectToHost(const Host &host);
 
     const QSslCertificate &ourCertificate() const;
+    const QList<QSslCertificate> trustedCertificates() const;
+
+    const Host hostWithCert(const QSslCertificate &cert) const;
+    bool isTrusted(const Host &host) const;
 
 protected:
     void incomingConnection(qintptr handle) override;

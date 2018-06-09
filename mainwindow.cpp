@@ -92,7 +92,8 @@ void MainWindow::onHostSelectionChanged(int row)
     }
 
     if (!m_connections.contains(host)) {
-        m_connections[host] = m_connectionHandler->connectToHost(host);
+        m_connections[host] = new Connection(m_connectionHandler);
+        m_connections[host]->list(host, "/");
         connect(m_connections[host], &Connection::connectionEstablished, this, &MainWindow::onConnected);
     }
 
@@ -102,11 +103,11 @@ void MainWindow::onHostSelectionChanged(int row)
     }
 
     if (m_currentConnection) {
-        disconnect(m_currentConnection, &Connection::listingFinished, this, nullptr);
+        disconnect(m_currentConnection, &Connection::listingReceived, this, nullptr);
     }
 
     m_currentConnection = m_connections[host];
-    connect(m_currentConnection, &Connection::listingFinished, this, &MainWindow::onListingFinished);
+    connect(m_currentConnection, &Connection::listingReceived, this, &MainWindow::onListingFinished);
 }
 
 void MainWindow::onListingFinished(const QString &path, const QStringList &names)

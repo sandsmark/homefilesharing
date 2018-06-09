@@ -61,32 +61,39 @@ void ConnectionHandler::trustHost(const Host &host)
     settings.setValue("certificate", host.certificate.toPem());
 }
 
-Connection *ConnectionHandler::connectToHost(const Host &host)
-{
-    return new Connection(this, host, m_certificate, m_key);
-}
-
 const QSslCertificate &ConnectionHandler::ourCertificate() const
 {
     return m_certificate;
+}
+
+const QList<QSslCertificate> ConnectionHandler::trustedCertificates() const
+{
+    QList<QSslCertificate> certs;
+    for (const Host &trustedHost : m_trustedHosts) {
+        certs.append(trustedHost.certificate);
+    }
+
+    return certs;
+}
+
+bool ConnectionHandler::isTrusted(const Host &host) const
+{
+    return m_trustedHosts.contains(host);
 }
 
 void ConnectionHandler::incomingConnection(qintptr handle)
 {
     qDebug() << "Got incoming";
 
-    QSslSocket *serverSocket = new QSslSocket;
-    if (!serverSocket->setSocketDescriptor(handle)) {
+    Connection *connection = new Connection(this);
+    if (!connection->socket()->setSocketDescriptor(handle)) {
         qWarning() << "Failed to set descriptor" << handle;
-        delete serverSocket;
+        delete connection;
         return;
     }
-    serverSocket->setLocalCertificate(m_certificate);
-    serverSocket->setPrivateKey(m_key);
 
-    addPendingConnection(serverSocket);
-    connect(serverSocket, &QSslSocket::encrypted, this, &ConnectionHandler::onSslClientConnected);
-    serverSocket->startServerEncryption();
+    addPendingConnection(connection->socket());
+    connection->socket()->startServerEncryption();
 }
 
 void ConnectionHandler::sendPing()
@@ -190,8 +197,8 @@ void ConnectionHandler::onDatagram()
         }
 
         if (isOurs) {
-            qDebug() << "Got ping from ourselves";
-//            continue;
+//            qDebug() << "Got ping from ourselves";
+            continue;
         }
 
         if (!datagram.startsWith(PING_HEADER)) {
@@ -234,7 +241,8 @@ void ConnectionHandler::onSslClientConnected()
     host.certificate = sock->peerCertificate();
     if (!m_trustedHosts.contains(host)) {
         qWarning() << "Untrusted host";
-        sender()->deleteLater();
+        sock->disconnectFromHost();
+//        sender()->deleteLater();
         return;
     }
 

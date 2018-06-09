@@ -5,6 +5,8 @@
 #include <QHostAddress>
 
 struct Host {
+    Host() = default;
+    Host(const QSslCertificate &cert) : certificate(cert) {}
     QString name;
     QHostAddress address;
     QSslCertificate certificate;
