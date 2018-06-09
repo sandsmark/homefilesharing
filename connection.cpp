@@ -269,7 +269,7 @@ void Connection::handleCommand(const QString &command, QString path)
         const QDir dir(path);
         const QFileInfoList files = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDot, QDir::Name | QDir::DirsFirst | QDir::LocaleAware);
         for (const QFileInfo &fi : files) {
-            retData += fi.fileName();
+            retData += fi.size() + ':' + fi.fileName();
             if (fi.isDir()) {
                 retData += '/';
             }

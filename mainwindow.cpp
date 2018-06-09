@@ -104,12 +104,21 @@ void MainWindow::onListingFinished(const QString &path, const QStringList &names
     }
     QMimeDatabase mimeDb;
     QIcon folderIcon = QIcon::fromTheme(mimeDb.mimeTypeForName("inode/directory").iconName());
-    for (const QString name : names) {
+    for (QString name : names) {
+        int separatorPos = name.indexOf(':');
+        if (separatorPos == -1) {
+            qDebug() << "Invalid line" << name;
+        }
+        int size = name.left(separatorPos).toInt();
+        name = name.mid(separatorPos + 1);
+
         QListWidgetItem *item = new QListWidgetItem(name);
         if (name.endsWith('/')) {
             item->setIcon(folderIcon);
         } else {
             item->setIcon(QIcon::fromTheme(mimeDb.mimeTypeForFile(name).iconName()));
+            item->setData(Qt::UserRole, size);
+            item->setText(name + "(" + QString::number(size) + ")");
         }
 
         m_fileList->addItem(item);
