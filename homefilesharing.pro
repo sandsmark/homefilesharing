@@ -30,7 +30,8 @@ SOURCES += \
     connectionhandler.cpp \
     randomart.cpp \
     connectdialog.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    transferdialog.cpp
 
 HEADERS += \
         machinelist.h \
@@ -40,4 +41,5 @@ HEADERS += \
     randomart.h \
     connectdialog.h \
     mainwindow.h \
-    host.h
+    host.h \
+    transferdialog.h

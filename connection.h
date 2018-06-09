@@ -40,6 +40,7 @@ signals:
     void listingReceived(const QString &path, const QStringList &name);
     void connectionEstablished(Connection *who);
     void disconnected();
+    void bytesTransferred(qint64 bytes);
 
 private slots:
     void onEncrypted();

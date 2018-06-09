@@ -207,12 +207,14 @@ void Connection::onReadyRead()
         qDebug() << "Opened" << m_localPath << "for writing";
     }
 
+    const qint64 bytesToRead = m_socket->bytesAvailable();
     m_file->write(m_socket->readAll());
+    emit bytesTransferred(bytesToRead);
 }
 
 void Connection::onBytesWritten(qint64 bytes)
 {
-    qDebug() << "Wrote" << bytes;
+    emit bytesTransferred(bytes);
 
     if (m_socket->bytesToWrite() > 0) {
         qDebug() << "Still" << m_socket->bytesToWrite() << "bytes to write";

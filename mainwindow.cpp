@@ -3,6 +3,7 @@
 #include "connectionhandler.h"
 #include "connectdialog.h"
 #include "randomart.h"
+#include "transferdialog.h"
 
 #include <QSplitter>
 #include <QListWidget>
@@ -148,6 +149,8 @@ void MainWindow::onFileItemDoubleClicked(QListWidgetItem *item)
     }
 
     Connection *connection = new Connection(m_connectionHandler);
+    new TransferDialog(this, connection, item->data(Qt::UserRole).toInt());
+
     connection->download(currentHost(), m_currentPath + filename, localPath);
 }
 
