@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QWidget>
+#include <QPainterPath>
 
 class QSslCertificate;
 
@@ -22,6 +23,8 @@ protected:
 private:
     QString m_data;
     QVector<int> m_array;
+    QVector<QLine> m_lines;
+    QPainterPath m_path;
 };
 
 #endif // RANDOMART_H
