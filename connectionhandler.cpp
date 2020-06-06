@@ -53,7 +53,10 @@ ConnectionHandler::ConnectionHandler(QObject *parent) : QTcpServer(parent)
 ConnectionHandler::~ConnectionHandler()
 {
     m_pingSocket.close();
-    m_pingSocket.waitForDisconnected();
+
+    if (m_pingSocket.isConnected()) {
+        m_pingSocket.waitForDisconnected();
+    }
 }
 
 void ConnectionHandler::trustHost(const Host &host)
@@ -103,6 +106,9 @@ void ConnectionHandler::incomingConnection(qintptr handle)
         delete connection;
         return;
     }
+
+    connect(connection, &Connection::mouseMoveRequested, this, &ConnectionHandler::mouseMoveRequested);
+    connect(connection, &Connection::mouseClickRequested, this, &ConnectionHandler::mouseClickRequested);
 
     addPendingConnection(connection->socket());
     connection->socket()->startServerEncryption();

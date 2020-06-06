@@ -14,6 +14,9 @@
 #include <QStandardPaths>
 #include <QFileDialog>
 
+#include <X11/extensions/XTest.h>
+#include <QX11Info>
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
     QSplitter *splitter = new QSplitter;
@@ -43,6 +46,41 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(m_trustButton, &QPushButton::clicked, this, &MainWindow::onTrustClicked);
     connect(m_list, &QListWidget::currentRowChanged, this, &MainWindow::onHostSelectionChanged);
     connect(m_fileList, &QListWidget::itemDoubleClicked, this, &MainWindow::onFileItemDoubleClicked);
+
+    connect(m_connectionHandler, &ConnectionHandler::mouseClickRequested, this, &MainWindow::onMouseClickRequested);
+    connect(m_connectionHandler, &ConnectionHandler::mouseMoveRequested, this, [](const QPoint &position) {
+        QCursor::setPos(position);
+    });
+
+    // only X11 because everything else sucks
+    Q_ASSERT(QX11Info::display());
+}
+
+void MainWindow::onMouseClickRequested(const QPoint &position, const Qt::MouseButton button)
+{
+    QCursor::setPos(position);
+
+    int xButton = 0;
+    switch(button) {
+    case Qt::LeftButton:
+        xButton = 1;
+        break;
+    case Qt::MidButton:
+        xButton = 2;
+    case Qt::RightButton:
+        xButton = 3;
+        break;
+    default:
+        qWarning() << "unhandled button" << button;
+        return;
+    }
+
+    Display* display = QX11Info::display();
+    Q_ASSERT(display);
+
+    XTestFakeButtonEvent(display, xButton, True, 0);
+    XTestFakeButtonEvent(display, xButton, False, 0);
+    XFlush(display);
 }
 
 void MainWindow::onPingFromHost(const Host &host)

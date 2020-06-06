@@ -34,6 +34,9 @@ protected:
 signals:
     void pingFromHost(const Host &host);
 
+    void mouseMoveRequested(const QPoint &position);
+    void mouseClickRequested(const QPoint &position, const Qt::MouseButton button);
+
 private slots:
     void sendPing();
     void onDatagram();

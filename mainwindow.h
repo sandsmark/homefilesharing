@@ -25,6 +25,7 @@ private slots:
     void onHostSelectionChanged(int row);
     void onListingFinished(const QString &path, const QStringList &names);
     void onFileItemDoubleClicked(QListWidgetItem *item);
+    void onMouseClickRequested(const QPoint &position, const Qt::MouseButton button);
 
 private:
     Host currentHost();

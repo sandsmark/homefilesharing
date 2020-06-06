@@ -4,12 +4,12 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network widgets
+QT       += core gui network widgets x11extras
 
 TARGET = homefilesharing
 TEMPLATE = app
 
-LIBS += -lcrypto
+LIBS += -lcrypto -lX11 -lXtst
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings

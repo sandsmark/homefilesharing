@@ -21,6 +21,7 @@ public:
         ReceiveListing,
         SendListing,
         ReceiveFile,
+        SendMouseControl,
         SendFile
     };
     Q_ENUM(Type)
@@ -36,11 +37,17 @@ public:
 
     QSslSocket *socket() const { return m_socket; }
 
+    void sendMouseClickEvent(const QPoint &position, const Qt::MouseButton button);
+    void sendMouseMoveEvent(const QPoint &position);
+
 signals:
     void listingReceived(const QString &path, const QStringList &name);
     void connectionEstablished(Connection *who);
     void disconnected();
     void bytesTransferred(qint64 bytes);
+
+    void mouseMoveRequested(const QPoint &position);
+    void mouseClickRequested(const QPoint &position, const Qt::MouseButton button);
 
 private slots:
     void onEncrypted();
@@ -51,6 +58,7 @@ private slots:
 
 private:
     void handleCommand(const QString &command, QString path);
+    void handleMouseCommand(const QString &command, const QJsonObject &data);
 
     QPointer<QFile> m_file;
 

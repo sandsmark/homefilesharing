@@ -8,6 +8,7 @@
 #include <QSettings>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QPoint>
 #include <QDir>
 
 Connection::Connection(ConnectionHandler *parent) :
@@ -33,7 +34,7 @@ Connection::Connection(ConnectionHandler *parent) :
     connect(m_socket, &QSslSocket::disconnected, this, &Connection::disconnected);
     connect(m_socket, &QSslSocket::disconnected, this, &Connection::onDisconnected);
     connect(m_socket, &QSslSocket::encrypted, this, &Connection::onEncrypted);
-    connect(m_socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &Connection::onError);
+    connect(m_socket, &QAbstractSocket::errorOccurred, this, &Connection::onError);
 }
 
 void Connection::download(const Host &host, const QString &remotePath, const QString &localPath)
@@ -149,8 +150,69 @@ void Connection::onDisconnected()
     deleteLater();
 }
 
+void Connection::sendMouseClickEvent(const QPoint &position, const Qt::MouseButton button)
+{
+    QJsonObject request;
+    request["command"] = "mousemove";
+    request["x"] = position.x();
+    request["y"] = position.y();
+    request["mousebutton"] = int(button);
+
+    m_socket->write(QJsonDocument(request).toJson(QJsonDocument::Compact) + "\n");
+}
+
+void Connection::sendMouseMoveEvent(const QPoint &position)
+{
+    QJsonObject request;
+    request["command"] = "mousemove";
+    request["x"] = position.x();
+    request["y"] = position.y();
+
+    m_socket->write(QJsonDocument(request).toJson(QJsonDocument::Compact) + "\n");
+}
+
+void Connection::handleMouseCommand(const QString &command, const QJsonObject &data)
+{
+    const QPoint position(data["x"].toInt(-1), data["y"].toInt(-1));
+    if (position.x() < 0 || position.y() < 0) {
+        qWarning() << "invalid position";
+        return;
+    }
+
+    if (command == "mousemove") {
+        emit mouseMoveRequested(position);
+        return;
+    }
+
+    if (command != "mouseclick") {
+        qWarning() << "Unhandled mouse command" << command;
+    }
+
+    const int button = data["mousebutton"].toInt(-1);
+    switch(button) {
+    case Qt::LeftButton:
+    case Qt::RightButton:
+    case Qt::MiddleButton:
+        emit mouseClickRequested(position, Qt::LeftButton);
+        break;
+    default:
+        qWarning() << "Unhandled mouse button" << button;
+        break;
+    }
+
+    return;
+}
+
 void Connection::onReadyRead()
 {
+    if (!m_handler->isTrusted(m_host)) {
+        qWarning() << "Should not happen, but we got ready read for untrusted";
+        qDebug().noquote() << m_socket->peerCertificate().toText();
+        m_socket->disconnectFromHost();
+        deleteLater();
+        return;
+    }
+
     if (m_type == Incoming) {
         if (!m_socket->canReadLine()) {
             return;
@@ -164,7 +226,13 @@ void Connection::onReadyRead()
             return;
         }
 
-        handleCommand(request["command"].toString(), request["path"].toString());
+        const QString command = request["command"].toString();
+        if (command.startsWith("mouse")) {
+            handleMouseCommand(command, request);
+            return;
+        }
+
+        handleCommand(command, request["path"].toString());
         return;
     }
 
@@ -218,6 +286,10 @@ void Connection::onBytesWritten(qint64 bytes)
 
     if (m_socket->bytesToWrite() > 0) {
         qDebug() << "Still" << m_socket->bytesToWrite() << "bytes to write";
+        return;
+    }
+
+    if (m_type == SendMouseControl) {
         return;
     }
 
