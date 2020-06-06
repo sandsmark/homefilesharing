@@ -67,6 +67,7 @@ void MainWindow::onMouseClickRequested(const QPoint &position, const Qt::MouseBu
         break;
     case Qt::MidButton:
         xButton = 2;
+        break;
     case Qt::RightButton:
         xButton = 3;
         break;
