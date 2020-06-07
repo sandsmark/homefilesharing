@@ -4,7 +4,8 @@ homefilesharing
 ![screenshot](/doc/screenshot.png)
 
 A simple application that shows other computers running this application on
-your LAN, and allows file transfers between trusted computers.
+your LAN, and allows file transfers between trusted computers, as well as
+remotely controlling the cursor. For when you can't be bothered to get up.
 
 While there have been others like this before, they were either way too
 complex, didn't support encryption, or didn't provide source code so I could
@@ -19,6 +20,7 @@ Features
  - Authentication
  - Randomart (like in SSH, but prettier) for easier signature verification
  - Encryption
+ - Remote mouse control (Synergy/Barrier Light™)
 
 
 Other
