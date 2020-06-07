@@ -54,7 +54,7 @@ ConnectionHandler::~ConnectionHandler()
 {
     m_pingSocket.close();
 
-    if (m_pingSocket.isConnected()) {
+    if (m_pingSocket.state() != QAbstractSocket::UnconnectedState) {
         m_pingSocket.waitForDisconnected();
     }
 }
