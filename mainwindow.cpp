@@ -57,7 +57,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     connect(m_connectionHandler, &ConnectionHandler::mouseClickRequested, this, &MainWindow::onMouseClickRequested);
     connect(m_connectionHandler, &ConnectionHandler::mouseMoveRequested, this, [](const QPoint &position) {
+#ifdef Q_OS_LINUX
+        Display* display = QX11Info::display();
+        Q_ASSERT(display);
+        XTestFakeMotionEvent(display, -1, position.x(), position.y(), CurrentTime);
+        XFlush(display);
+#else
         QCursor::setPos(position);
+#endif
     });
 }
 
