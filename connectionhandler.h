@@ -40,7 +40,6 @@ signals:
 private slots:
     void sendPing();
     void onDatagram();
-    void onSslClientConnected();
     void onClientError();
 
 private:

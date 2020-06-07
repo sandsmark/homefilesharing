@@ -246,26 +246,6 @@ void ConnectionHandler::onDatagram()
     }
 }
 
-void ConnectionHandler::onSslClientConnected()
-{
-    QSslSocket *sock = qobject_cast<QSslSocket*>(sender());
-    if (!sock) {
-        qWarning() << "Invalid sender";
-        return;
-    }
-    Host host;
-    host.address = sock->peerAddress();
-    host.certificate = sock->peerCertificate();
-    if (!m_trustedHosts.contains(host)) {
-        qWarning() << "Untrusted host";
-        sock->disconnectFromHost();
-//        sender()->deleteLater();
-        return;
-    }
-
-    qDebug() << "Client connected" << sender();
-}
-
 void ConnectionHandler::onClientError()
 {
     QSslSocket *sock = qobject_cast<QSslSocket*>(sender());
