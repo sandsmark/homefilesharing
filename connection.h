@@ -28,6 +28,7 @@ public:
 
     explicit Connection(ConnectionHandler *parent);
     explicit Connection(ConnectionHandler *parent, const Host &host, const Type type, const QString &path);
+    ~Connection();
 
     void download(const Host &host, const QString &remotePath, const QString &localPath);
     void upload(const Host &host, const QString &remotePath, const QString &localPath);

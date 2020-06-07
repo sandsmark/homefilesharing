@@ -37,6 +37,13 @@ Connection::Connection(ConnectionHandler *parent) :
     connect(m_socket, &QAbstractSocket::errorOccurred, this, &Connection::onError);
 }
 
+Connection::~Connection()
+{
+    if (m_socket->state() != QAbstractSocket::UnconnectedState) {
+        m_socket->abort();
+    }
+}
+
 void Connection::download(const Host &host, const QString &remotePath, const QString &localPath)
 {
     qDebug() << "downloading" << remotePath << "from" << host.address;
