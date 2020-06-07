@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QPointer>
+#include <QSslSocket>
 
 #include "host.h"
 
@@ -63,9 +64,9 @@ private:
 
     QPointer<QFile> m_file;
 
-    QSslSocket *m_socket = nullptr;
+    QPointer<QSslSocket> m_socket = nullptr;
     Host m_host;
-    ConnectionHandler *m_handler = nullptr;
+    QPointer<ConnectionHandler> m_handler;
     Type m_type = Incoming;
     QString m_remotePath;
     QString m_localPath;

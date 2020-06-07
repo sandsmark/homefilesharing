@@ -103,7 +103,7 @@ void ConnectionHandler::incomingConnection(qintptr handle)
     Connection *connection = new Connection(this);
     if (!connection->socket()->setSocketDescriptor(handle)) {
         qWarning() << "Failed to set descriptor" << handle;
-        delete connection;
+        connection->deleteLater();
         return;
     }
 

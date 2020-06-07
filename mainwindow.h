@@ -32,7 +32,7 @@ private:
     void updateFileList();
 
     QListWidget *m_list;
-    ConnectionHandler *m_connectionHandler;
+    QPointer<ConnectionHandler> m_connectionHandler;
     QList<Host> m_visibleHosts;
     QPushButton *m_trustButton;
     QPointer<Connection> m_currentConnection;
