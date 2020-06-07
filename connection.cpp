@@ -34,7 +34,12 @@ Connection::Connection(ConnectionHandler *parent) :
     connect(m_socket, &QSslSocket::disconnected, this, &Connection::disconnected);
     connect(m_socket, &QSslSocket::disconnected, this, &Connection::onDisconnected);
     connect(m_socket, &QSslSocket::encrypted, this, &Connection::onEncrypted);
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     connect(m_socket, &QAbstractSocket::errorOccurred, this, &Connection::onError);
+#else
+    connect(m_socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &Connection::onError);
+#endif
 }
 
 Connection::~Connection()
