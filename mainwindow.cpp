@@ -14,8 +14,10 @@
 #include <QStandardPaths>
 #include <QFileDialog>
 
+#ifdef Q_OS_LINUX
 #include <X11/extensions/XTest.h>
 #include <QX11Info>
+#endif
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -51,13 +53,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(m_connectionHandler, &ConnectionHandler::mouseMoveRequested, this, [](const QPoint &position) {
         QCursor::setPos(position);
     });
-
-    // only X11 because everything else sucks
-    Q_ASSERT(QX11Info::display());
 }
 
 void MainWindow::onMouseClickRequested(const QPoint &position, const Qt::MouseButton button)
 {
+#ifdef Q_OS_LINUX
     QCursor::setPos(position);
 
     int xButton = 0;
@@ -82,6 +82,11 @@ void MainWindow::onMouseClickRequested(const QPoint &position, const Qt::MouseBu
     XTestFakeButtonEvent(display, xButton, True, 0);
     XTestFakeButtonEvent(display, xButton, False, 0);
     XFlush(display);
+#else
+    qWarning() << "Mouse stuff only available on Linux/X11";
+    Q_UNUSED(position);
+    Q_UNUSED(button);
+#endif
 }
 
 void MainWindow::onPingFromHost(const Host &host)
