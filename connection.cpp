@@ -91,7 +91,6 @@ void Connection::onEncrypted()
         qWarning() << "Connected to host with untrusted certificate";
         qDebug().noquote() << m_socket->peerCertificate().toText();
         m_socket->disconnectFromHost();
-        deleteLater();
         return;
     }
     qDebug() << "Encryption complete";
@@ -141,7 +140,6 @@ void Connection::onError()
 {
     qWarning() << "server error" << m_socket->errorString();
     m_socket->disconnectFromHost();
-    deleteLater();
 }
 
 void Connection::onDisconnected()
@@ -216,7 +214,6 @@ void Connection::onReadyRead()
         qWarning() << "Should not happen, but we got ready read for untrusted";
         qDebug().noquote() << m_socket->peerCertificate().toText();
         m_socket->disconnectFromHost();
-        deleteLater();
         return;
     }
 
