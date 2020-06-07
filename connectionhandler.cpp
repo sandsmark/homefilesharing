@@ -110,7 +110,6 @@ void ConnectionHandler::incomingConnection(qintptr handle)
     connect(connection, &Connection::mouseMoveRequested, this, &ConnectionHandler::mouseMoveRequested);
     connect(connection, &Connection::mouseClickRequested, this, &ConnectionHandler::mouseClickRequested);
 
-    addPendingConnection(connection->socket());
     connection->socket()->startServerEncryption();
 }
 
