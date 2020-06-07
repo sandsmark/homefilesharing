@@ -1,0 +1,32 @@
+<RCC>
+    <qresource prefix="/randomicons/">
+        <file>0.png</file>
+        <file>1.png</file>
+        <file>banana.png</file>
+        <file>bolt01.png</file>
+        <file>brown_ooze.png</file>
+        <file>chaos_spawn.png</file>
+        <file>crystal_wall13.png</file>
+        <file>curse_toe.png</file>
+        <file>dngn_altar_makhleb_flame1.png</file>
+        <file>dngn_enter_hell.png</file>
+        <file>dngn_return.png</file>
+        <file>fire_elemental.png</file>
+        <file>gold_pile.png</file>
+        <file>insubstantial_wisp.png</file>
+        <file>kraken_tentacle5.png</file>
+        <file>machine_tukima.png</file>
+        <file>mottled_dragon_armour.png</file>
+        <file>pink.png</file>
+        <file>plant.png</file>
+        <file>skeleton_dragon.png</file>
+        <file>spectral_naga.png</file>
+        <file>strawberry.png</file>
+        <file>unseen_monster.png</file>
+        <file>unseen_weapon.png</file>
+        <file>urand_ignorance.png</file>
+        <file>wall_flesh6.png</file>
+        <file>wandering_mushroom.png</file>
+        <file>yellow_wasp.png</file>
+    </qresource>
+</RCC>

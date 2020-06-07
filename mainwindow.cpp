@@ -13,6 +13,7 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QFileDialog>
+#include <QCheckBox>
 
 #ifdef Q_OS_LINUX
 #include <QApplication>
@@ -43,17 +44,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_connectionHandler = new ConnectionHandler(this);
 
     RandomArt *ourRandomart = new RandomArt(m_connectionHandler->ourCertificate());
+    QCheckBox *useIconsCheckbox = new QCheckBox("Use icons in fingerprint");
 
     leftWidget->layout()->addWidget(m_list);
     leftWidget->layout()->addWidget(m_trustButton);
     leftWidget->layout()->addWidget(m_mouseControlButton);
     leftWidget->layout()->addWidget(ourRandomart);
+    leftWidget->layout()->addWidget(useIconsCheckbox);
+    leftWidget->setMaximumWidth(ourRandomart->maximumWidth());
 
     connect(m_connectionHandler, &ConnectionHandler::pingFromHost, this, &MainWindow::onPingFromHost);
     connect(m_trustButton, &QPushButton::clicked, this, &MainWindow::onTrustClicked);
     connect(m_mouseControlButton, &QPushButton::clicked, this, &MainWindow::onMouseControlClicked);
     connect(m_list, &QListWidget::currentRowChanged, this, &MainWindow::onHostSelectionChanged);
     connect(m_fileList, &QListWidget::itemDoubleClicked, this, &MainWindow::onFileItemDoubleClicked);
+    connect(useIconsCheckbox, &QCheckBox::stateChanged, ourRandomart, &RandomArt::setUseIcons);
 
     connect(m_connectionHandler, &ConnectionHandler::mouseClickRequested, this, &MainWindow::onMouseClickRequested);
     connect(m_connectionHandler, &ConnectionHandler::mouseMoveRequested, this, [](const QPoint &position) {

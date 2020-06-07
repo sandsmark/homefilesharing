@@ -2,6 +2,7 @@
 #include <QPainter>
 #include <QDebug>
 #include <iostream>
+#include <QDir>
 
 #include <QSslCertificate>
 
@@ -33,6 +34,11 @@ RandomArt::RandomArt(const QSslCertificate &cert)
     if (data.length() != 32) {
         qWarning() << "Invalid data" << data.length();
         return;
+    }
+    int i=0;
+    for (const QString &icon : QDir(":/randomicons/").entryList()) {
+        qDebug() << (i++) << icon;
+        m_icons.append(QImage(":/randomicons/" + icon));
     }
 
 
@@ -92,10 +98,11 @@ RandomArt::RandomArt(const QSslCertificate &cert)
     for (int i=0; i<WIDTH*HEIGHT; i++) {
         m_data[i] = QString::number(m_array[i])[0];
         Q_ASSERT(size_t(m_array[i]) < sizeof(symbols));
+        Q_ASSERT(size_t(m_array[i]) < m_icons.size());
         m_data[i] = symbols[m_array[i]];
     }
 
-    setMinimumSize(WIDTH * 15, HEIGHT * 15);
+    setFixedSize(WIDTH * 32, HEIGHT * 32);
 }
 
 void RandomArt::paintEvent(QPaintEvent *)
@@ -109,34 +116,42 @@ void RandomArt::paintEvent(QPaintEvent *)
 
     const int dx = width() / WIDTH;
     const int dy = height() / HEIGHT;
+    if (m_useIcons) {
+        for (int y=0; y<HEIGHT; y++) {
+            for (int x=0; x<WIDTH; x++) {
+                const QRect r(x * dx, y * dy, dx, dy);
+                painter.drawImage(r, m_icons[m_array[x + y * WIDTH]]);
+            }
+        }
+    } else {
+        for (int y=0; y<HEIGHT; y++) {
+            for (int x=0; x<WIDTH; x++) {
+                const QRect r(x * dx, y * dy, dx, dy);
+                painter.fillRect(r, QColor::fromHsv(m_array[x + y * WIDTH] * 11, 255, m_array[x + y * WIDTH]  ? 255 : 0));
 
-    for (int y=0; y<HEIGHT; y++) {
-        for (int x=0; x<WIDTH; x++) {
-            const QRect r(x * dx, y * dy, dx, dy);
-            painter.fillRect(r, QColor::fromHsv(m_array[x + y * WIDTH] * 11, 255, m_array[x + y * WIDTH]  ? 255 : 0));
+                //painter.drawText(r, Qt::AlignCenter, QString(m_data[x + y * WIDTH]));
+            }
+        }
 
-            //painter.drawText(r, Qt::AlignCenter, QString(m_data[x + y * WIDTH]));
+        painter.save();
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(QPen(QColor(255, 255, 0, 182), dx/4));
+        painter.scale(dx, dy);
+        painter.setBrush(Qt::transparent);
+        QPainterPathStroker stroker;
+
+        painter.fillPath(stroker.createStroke(m_path), QColor(255, 255, 0, 32));
+        painter.restore();
+
+        for (const QLine &line : m_lines) {
+            QColor color = QColor::fromHsv(m_array[line.p1().x() + line.p1().y() * WIDTH] * 11, 255, m_array[line.p2().x() + line.p2().y() * WIDTH]  ? 255 : 0);
+            color.setAlpha(64);
+            painter.setPen(QPen(color, dx/4));
+
+            painter.drawLine(
+                    line.p1().x() * dx + dx/2, line.p1().y() * dy + dy/2,
+                    line.p2().x() * dx + dx/2, line.p2().y() * dy + dy/2
+                    );
         }
     }
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setPen(QPen(QColor(255, 255, 0, 182), dx/4));
-    painter.scale(dx, dy);
-    painter.setBrush(Qt::transparent);
-    QPainterPathStroker stroker;
-
-    painter.fillPath(stroker.createStroke(m_path), QColor(255, 255, 0, 32));
-    painter.restore();
-
-    for (const QLine &line : m_lines) {
-        QColor color = QColor::fromHsv(m_array[line.p1().x() + line.p1().y() * WIDTH] * 11, 255, m_array[line.p2().x() + line.p2().y() * WIDTH]  ? 255 : 0);
-        color.setAlpha(64);
-        painter.setPen(QPen(color, dx/4));
-
-        painter.drawLine(
-                line.p1().x() * dx + dx/2, line.p1().y() * dy + dy/2,
-                line.p2().x() * dx + dx/2, line.p2().y() * dy + dy/2
-                );
-    }
-    //painter.drawPath(m_path);
 }
