@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <QPointer>
-#include <QMessageBox>
+#include <QLabel>
 #include <QMouseEvent>
 
 #include "connectionhandler.h"
@@ -13,7 +13,7 @@ class QListWidget;
 class QListWidgetItem;
 class QPushButton;
 
-class MouseControlWindow : public QMessageBox
+class MouseControlWindow : public QLabel
 {
     Q_OBJECT
 
@@ -31,6 +31,11 @@ protected:
     }
     void mousePressEvent(QMouseEvent *event) override {
         emit mouseClicked(event->globalPos(), event->button());
+    }
+    void keyPressEvent(QKeyEvent *event) override {
+        if (event->key() == Qt::Key_Escape) {
+            close();
+        }
     }
 };
 

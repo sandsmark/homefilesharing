@@ -13,9 +13,10 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QFileDialog>
-#include <QMessageBox>
 
 #ifdef Q_OS_LINUX
+#include <QApplication>
+#include <QDesktopWidget>
 #include <X11/extensions/XTest.h>
 #include <QX11Info>
 #endif
@@ -62,34 +63,42 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 void MainWindow::onMouseControlClicked()
 {
-    qDebug() << "mouse control clicked";
-
     int row = m_list->currentRow();
     if (row < 0 || row >= m_visibleHosts.count()) {
         qWarning() << "Invalid selection" << row;
         return;
     }
 
-    // QMessageBox because it automatically gets a dismiss action on esc and a text message
     MouseControlWindow *mouseInputDialog = new MouseControlWindow;
-    mouseInputDialog->connection = new Connection(m_connectionHandler);
-    connect(mouseInputDialog->connection, &Connection::disconnected, mouseInputDialog, &MouseControlWindow::reject);
+    mouseInputDialog->setWindowFlags(Qt::Dialog | Qt::NoDropShadowWindowHint | Qt::FramelessWindowHint | mouseInputDialog->windowFlags());
 
-    connect(mouseInputDialog, &QDialog::finished, m_mouseControlButton, [this, mouseInputDialog]() {
+    // Semi-translucent background
+    mouseInputDialog->setAttribute(Qt::WA_TranslucentBackground);
+    mouseInputDialog->setAttribute(Qt::WA_NoSystemBackground, false);
+    QColor background = palette().window().color();
+    background.setAlpha(128);
+    mouseInputDialog->setStyleSheet(QStringLiteral("background:%1").arg(background.name(QColor::HexArgb)));
+
+    mouseInputDialog->connection = new Connection(m_connectionHandler);
+    connect(mouseInputDialog->connection, &Connection::disconnected, mouseInputDialog, &MouseControlWindow::close);
+
+    connect(mouseInputDialog, &MouseControlWindow::destroyed, m_mouseControlButton, [this, mouseInputDialog]() {
         this->m_mouseControlButton->setEnabled(true);
         mouseInputDialog->connection->socket()->disconnectFromHost();
     });
+
     connect(mouseInputDialog->connection, &Connection::connectionEstablished, mouseInputDialog, [mouseInputDialog]() {
-        mouseInputDialog->showFullScreen();
+        mouseInputDialog->setGeometry(QApplication::desktop()->availableGeometry(mouseInputDialog));
 
         connect(mouseInputDialog, &MouseControlWindow::mouseMoved, mouseInputDialog->connection, &Connection::sendMouseMoveEvent);
         connect(mouseInputDialog, &MouseControlWindow::mouseClicked, mouseInputDialog->connection, &Connection::sendMouseClickEvent);
 
-        mouseInputDialog->setText("Press escape to cancel");
+        mouseInputDialog->setText("Press escape to cancel mouse control");
         mouseInputDialog->setMouseTracking(true);
     });
 
-    mouseInputDialog->setMouseTracking(true);
+
+    mouseInputDialog->setAlignment(Qt::AlignCenter);
     mouseInputDialog->setText("Connecting to host...");
 
     mouseInputDialog->show();
