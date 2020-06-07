@@ -49,6 +49,15 @@ Connection::~Connection()
     }
 }
 
+void Connection::initiateMouseControl(const Host &host)
+{
+    qDebug() << "initiating mouse control of" << host.address;
+    m_host = host;
+    m_type = SendMouseControl;
+
+    m_socket->connectToHostEncrypted(host.address.toString(), TRANSFER_PORT);
+}
+
 void Connection::download(const Host &host, const QString &remotePath, const QString &localPath)
 {
     qDebug() << "downloading" << remotePath << "from" << host.address;
@@ -129,6 +138,7 @@ void Connection::onEncrypted()
         connect(m_socket, &QSslSocket::readyRead, this, &Connection::onReadyRead);
         break;
 
+    case SendMouseControl:
     case Incoming:
         return;
 
@@ -163,7 +173,7 @@ void Connection::onDisconnected()
 void Connection::sendMouseClickEvent(const QPoint &position, const Qt::MouseButton button)
 {
     QJsonObject request;
-    request["command"] = "mousemove";
+    request["command"] = "mouseclick";
     request["x"] = position.x();
     request["y"] = position.y();
     request["mousebutton"] = int(button);

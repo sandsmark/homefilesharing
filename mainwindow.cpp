@@ -13,6 +13,7 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QFileDialog>
+#include <QMessageBox>
 
 #ifdef Q_OS_LINUX
 #include <X11/extensions/XTest.h>
@@ -35,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_fileList = new QListWidget;
     splitter->addWidget(m_fileList);
 
+    m_mouseControlButton = new QPushButton("Control remote mouse");
+    m_mouseControlButton->setEnabled(false);
 
     m_connectionHandler = new ConnectionHandler(this);
 
@@ -42,10 +45,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     leftWidget->layout()->addWidget(m_list);
     leftWidget->layout()->addWidget(m_trustButton);
+    leftWidget->layout()->addWidget(m_mouseControlButton);
     leftWidget->layout()->addWidget(ourRandomart);
 
     connect(m_connectionHandler, &ConnectionHandler::pingFromHost, this, &MainWindow::onPingFromHost);
     connect(m_trustButton, &QPushButton::clicked, this, &MainWindow::onTrustClicked);
+    connect(m_mouseControlButton, &QPushButton::clicked, this, &MainWindow::onMouseControlClicked);
     connect(m_list, &QListWidget::currentRowChanged, this, &MainWindow::onHostSelectionChanged);
     connect(m_fileList, &QListWidget::itemDoubleClicked, this, &MainWindow::onFileItemDoubleClicked);
 
@@ -53,6 +58,42 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(m_connectionHandler, &ConnectionHandler::mouseMoveRequested, this, [](const QPoint &position) {
         QCursor::setPos(position);
     });
+}
+
+void MainWindow::onMouseControlClicked()
+{
+    qDebug() << "mouse control clicked";
+
+    int row = m_list->currentRow();
+    if (row < 0 || row >= m_visibleHosts.count()) {
+        qWarning() << "Invalid selection" << row;
+        return;
+    }
+
+    // QMessageBox because it automatically gets a dismiss action on esc and a text message
+    MouseControlWindow *mouseInputDialog = new MouseControlWindow;
+    mouseInputDialog->connection = new Connection(m_connectionHandler);
+    connect(mouseInputDialog->connection, &Connection::disconnected, mouseInputDialog, &MouseControlWindow::reject);
+
+    connect(mouseInputDialog, &QDialog::finished, m_mouseControlButton, [this, mouseInputDialog]() {
+        this->m_mouseControlButton->setEnabled(true);
+        mouseInputDialog->connection->socket()->disconnectFromHost();
+    });
+    connect(mouseInputDialog->connection, &Connection::connectionEstablished, mouseInputDialog, [mouseInputDialog]() {
+        mouseInputDialog->showFullScreen();
+
+        connect(mouseInputDialog, &MouseControlWindow::mouseMoved, mouseInputDialog->connection, &Connection::sendMouseMoveEvent);
+        connect(mouseInputDialog, &MouseControlWindow::mouseClicked, mouseInputDialog->connection, &Connection::sendMouseClickEvent);
+
+        mouseInputDialog->setText("Press escape to cancel");
+        mouseInputDialog->setMouseTracking(true);
+    });
+
+    mouseInputDialog->setMouseTracking(true);
+    mouseInputDialog->setText("Connecting to host...");
+
+    mouseInputDialog->show();
+    mouseInputDialog->connection->initiateMouseControl(m_visibleHosts[row]);
 }
 
 void MainWindow::onMouseClickRequested(const QPoint &position, const Qt::MouseButton button)
@@ -128,6 +169,7 @@ void MainWindow::onHostSelectionChanged(int row)
     if (row < 0 || row >= m_visibleHosts.count()) {
         qWarning() << "Invalid selection" << row;
         m_trustButton->setEnabled(false);
+        m_mouseControlButton->setEnabled(false);
         return;
     }
 
@@ -139,6 +181,8 @@ void MainWindow::onHostSelectionChanged(int row)
     }
 
     m_trustButton->setEnabled(false);
+
+    m_mouseControlButton->setEnabled(true);
 
     m_currentPath = "/";
 

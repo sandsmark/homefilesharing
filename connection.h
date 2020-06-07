@@ -28,17 +28,18 @@ public:
     Q_ENUM(Type)
 
     explicit Connection(ConnectionHandler *parent);
-    explicit Connection(ConnectionHandler *parent, const Host &host, const Type type, const QString &path);
     ~Connection();
 
     void download(const Host &host, const QString &remotePath, const QString &localPath);
     void upload(const Host &host, const QString &remotePath, const QString &localPath);
     void list(const Host &host, const QString &remotePath);
+    void initiateMouseControl(const Host &host);
 
     bool isConnected() const;
 
     QSslSocket *socket() const { return m_socket; }
 
+public slots:
     void sendMouseClickEvent(const QPoint &position, const Qt::MouseButton button);
     void sendMouseMoveEvent(const QPoint &position);
 

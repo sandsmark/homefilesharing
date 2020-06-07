@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include <QPointer>
+#include <QMessageBox>
+#include <QMouseEvent>
 
 #include "connectionhandler.h"
 #include "connection.h"
@@ -10,6 +12,27 @@
 class QListWidget;
 class QListWidgetItem;
 class QPushButton;
+
+class MouseControlWindow : public QMessageBox
+{
+    Q_OBJECT
+
+signals:
+    void mouseMoved(const QPoint &position);
+    void mouseClicked(const QPoint &position, const Qt::MouseButton button);
+
+public:
+    QPointer<Connection> connection;
+
+
+protected:
+    void mouseMoveEvent(QMouseEvent *event) override {
+        emit mouseMoved(event->globalPos());
+    }
+    void mousePressEvent(QMouseEvent *event) override {
+        emit mouseClicked(event->globalPos(), event->button());
+    }
+};
 
 class MainWindow : public QMainWindow
 {
@@ -25,6 +48,8 @@ private slots:
     void onHostSelectionChanged(int row);
     void onListingFinished(const QString &path, const QStringList &names);
     void onFileItemDoubleClicked(QListWidgetItem *item);
+
+    void onMouseControlClicked();
     void onMouseClickRequested(const QPoint &position, const Qt::MouseButton button);
 
 private:
@@ -35,6 +60,7 @@ private:
     QPointer<ConnectionHandler> m_connectionHandler;
     QList<Host> m_visibleHosts;
     QPushButton *m_trustButton;
+    QPushButton *m_mouseControlButton;
     QPointer<Connection> m_currentConnection;
 
     QListWidget *m_fileList;
