@@ -16,10 +16,15 @@
 #include <QCheckBox>
 
 #ifdef Q_OS_LINUX
-#include <QApplication>
-#include <QDesktopWidget>
-#include <X11/extensions/XTest.h>
-#include <QX11Info>
+    #include <QApplication>
+    #include <QDesktopWidget>
+    #include <X11/extensions/XTest.h>
+    #include <QX11Info>
+#elif Q_OS_WINDOWS
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #include <windows.h>
 #endif
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
@@ -119,9 +124,9 @@ void MainWindow::onMouseControlClicked()
 
 void MainWindow::onMouseClickRequested(const QPoint &position, const Qt::MouseButton button)
 {
-#ifdef Q_OS_LINUX
     QCursor::setPos(position);
 
+#ifdef Q_OS_LINUX
     int xButton = 0;
     switch(button) {
     case Qt::LeftButton:
@@ -144,8 +149,46 @@ void MainWindow::onMouseClickRequested(const QPoint &position, const Qt::MouseBu
     XTestFakeButtonEvent(display, xButton, True, 0);
     XTestFakeButtonEvent(display, xButton, False, 0);
     XFlush(display);
+#elif Q_OS_WINDOWS
+    INPUT inputEvent;
+    ZeroMemory(&inputEvent, sizeof(inputEvent));
+    inputEvent.type = INPUT_MOUSE;
+
+    // Press
+    switch(button) {
+    case Qt::LeftButton:
+        inputEvent.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+        break;
+    case Qt::MidButton:
+        inputEvent.mi.dwFlags = MOUSEEVENTF_MIDDLEDOWN;
+        break;
+    case Qt::RightButton:
+        inputEvent.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+        break;
+    default:
+        qWarning() << "unhandled button" << button;
+        return;
+    }
+    SendInput(1, &inputEvent, sizeof(inputEvent));
+
+    // Release
+    switch(button) {
+    case Qt::LeftButton:
+        inputEvent.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+        break;
+    case Qt::MidButton:
+        inputEvent.mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
+        break;
+    case Qt::RightButton:
+        inputEvent.mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+        break;
+    default:
+        qWarning() << "unhandled button" << button;
+        return;
+    }
+    SendInput(1, &inputEvent, sizeof(inputEvent));
 #else
-    qWarning() << "Mouse stuff only available on Linux/X11";
+    qWarning() << "Mouse stuff only available on Linux/X11 and windows";
     Q_UNUSED(position);
     Q_UNUSED(button);
 #endif
