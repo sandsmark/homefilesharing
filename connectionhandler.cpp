@@ -15,6 +15,10 @@
 #include <QNetworkInterface>
 #include <QSslSocket>
 
+extern "C" {
+#include <unistd.h>
+}
+
 ConnectionHandler::ConnectionHandler(QObject *parent) : QTcpServer(parent)
 {
     QSettings settings;
@@ -96,9 +100,27 @@ bool ConnectionHandler::isTrusted(const Host &host) const
     return false;
 }
 
+void ConnectionHandler::onClientDisconnected()
+{
+    m_activeConnections--;
+
+    if (m_activeConnections < maxConnections && !isListening()) {
+        listen(QHostAddress::Any, TRANSFER_PORT);
+    }
+}
+
 void ConnectionHandler::incomingConnection(qintptr handle)
 {
     qDebug() << "Got incoming";
+    if (m_activeConnections > maxConnections) {
+        qWarning() << "Too many open connections";
+        ::close(handle);
+
+        if (isListening()) {
+            close();
+        }
+        return;
+    }
 
     Connection *connection = new Connection(this);
     if (!connection->socket()->setSocketDescriptor(handle)) {
@@ -109,8 +131,16 @@ void ConnectionHandler::incomingConnection(qintptr handle)
 
     connect(connection, &Connection::mouseMoveRequested, this, &ConnectionHandler::mouseMoveRequested);
     connect(connection, &Connection::mouseClickRequested, this, &ConnectionHandler::mouseClickRequested);
+    connect(connection, &Connection::destroyed, this, &ConnectionHandler::onClientDisconnected);
 
     connection->socket()->startServerEncryption();
+    m_activeConnections++;
+
+    if (m_activeConnections > maxConnections) {
+        qWarning() << "Reached max connections, not listening anymore";
+        close();
+        return;
+    }
 }
 
 void ConnectionHandler::sendPing()

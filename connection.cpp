@@ -40,6 +40,15 @@ Connection::Connection(ConnectionHandler *parent) :
 #else
     connect(m_socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &Connection::onError);
 #endif
+
+    /// Avoid connections hanging for more than a second
+    m_timeoutTimer = new QTimer(this);
+    m_timeoutTimer->setInterval(1000); // shouldn't take more than a second to connect..
+    m_timeoutTimer->setSingleShot(true);
+
+    // abort() nukes the buffers and doesn't wait
+    connect(m_timeoutTimer.data(), &QTimer::timeout, m_socket, [this]() { m_socket->abort(); });
+    m_timeoutTimer->start();
 }
 
 Connection::~Connection()
@@ -100,6 +109,8 @@ bool Connection::isConnected() const
 void Connection::onEncrypted()
 {
     m_host.certificate = m_socket->peerCertificate();
+
+    m_timeoutTimer->stop();
 
     if (!m_handler->isTrusted(m_host)) {
         qWarning() << "Connected to host with untrusted certificate";

@@ -12,6 +12,7 @@ class QSslKey;
 class QSslCertificate;
 class ConnectionHandler;
 class QFile;
+class QTimer;
 
 class Connection : public QObject
 {
@@ -72,6 +73,7 @@ private:
     QString m_remotePath;
     QString m_localPath;
     QString m_basePath;
+    QPointer<QTimer> m_timeoutTimer;
 };
 
 #endif // CONNECTION_H

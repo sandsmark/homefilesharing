@@ -16,6 +16,8 @@ class ConnectionHandler : public QTcpServer
 {
     Q_OBJECT
 
+    static constexpr int maxConnections = 20;
+
 public:
     ConnectionHandler(QObject *parent);
     ~ConnectionHandler();
@@ -41,6 +43,7 @@ private slots:
     void sendPing();
     void onDatagram();
     void onClientError();
+    void onClientDisconnected();
 
 private:
     void generateKey();
@@ -51,6 +54,7 @@ private:
     QTimer m_pingTimer;
     QByteArray m_digest;
     QList<Host> m_trustedHosts;
+    int m_activeConnections = 0;
 };
 
 #endif // CONNECTIONHANDLER_H
