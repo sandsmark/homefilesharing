@@ -10,7 +10,9 @@ struct Host {
     QString name;
     QHostAddress address;
     QSslCertificate certificate;
+    QDateTime lastSeen;
     bool trusted = false;
+    bool offline = true;
 
     bool operator ==(const Host &other) const {
         return certificate == other.certificate;

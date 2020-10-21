@@ -49,11 +49,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_connectionHandler = new ConnectionHandler(this);
 
     RandomArt *ourRandomart = new RandomArt(m_connectionHandler->ourCertificate());
-    QCheckBox *useIconsCheckbox = new QCheckBox("Use icons in fingerprint");
+    QCheckBox *useIconsCheckbox = new QCheckBox(tr("Show icons"));
 
     leftWidget->layout()->addWidget(m_list);
     leftWidget->layout()->addWidget(m_trustButton);
     leftWidget->layout()->addWidget(m_mouseControlButton);
+    leftWidget->layout()->addWidget(new QLabel(tr("Our fingerprint:")));
     leftWidget->layout()->addWidget(ourRandomart);
     leftWidget->layout()->addWidget(useIconsCheckbox);
     leftWidget->setMaximumWidth(ourRandomart->maximumWidth());
@@ -76,6 +77,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
         QCursor::setPos(position);
 #endif
     });
+    m_cleanupTimer = new QTimer(this);
+    m_cleanupTimer->setSingleShot(true);
+    m_cleanupTimer->setInterval(10000);
+    connect(m_cleanupTimer, &QTimer::timeout, this, &MainWindow::onCleanup);
 }
 
 void MainWindow::onMouseControlClicked()
@@ -200,7 +205,12 @@ void MainWindow::onPingFromHost(const Host &host)
     int index = m_visibleHosts.indexOf(host);
     if (index >= 0) {
         m_visibleHosts[index] = host;
+        m_visibleHosts[index].offline = false;
         m_list->item(index)->setText(displayName);
+        m_list->item(index)->setIcon(host.trusted ? QIcon::fromTheme("security-high") : QIcon::fromTheme("security-low"));
+        if (!m_cleanupTimer->isActive()) {
+            m_cleanupTimer->start();
+        }
         return;
     }
 
@@ -213,8 +223,35 @@ void MainWindow::onPingFromHost(const Host &host)
     item->setIcon(host.trusted ? QIcon::fromTheme("security-high") : QIcon::fromTheme("security-low"));
     m_list->addItem(item);
     m_visibleHosts.append(host);
+
+    if (!m_cleanupTimer->isActive()) {
+        m_cleanupTimer->start();
+    }
 }
 
+void MainWindow::onCleanup()
+{
+    if (m_visibleHosts.isEmpty()) {
+        return;
+    }
+
+    bool anyActive = false;
+    for (int i=0; i<m_visibleHosts.size(); i++) {
+        if (m_visibleHosts[i].offline) {
+            continue;
+        }
+        if (m_visibleHosts[i].lastSeen.msecsTo(QDateTime::currentDateTime()) > 5000) {
+            m_visibleHosts[i].offline = true;
+            m_list->item(i)->setIcon(QIcon::fromTheme("network-offline"));
+            continue;
+        }
+        anyActive = true;
+    }
+
+    if (anyActive) {
+        m_cleanupTimer->start(10000);
+    }
+}
 void MainWindow::onTrustClicked()
 {
     int row = m_list->currentRow();
@@ -244,17 +281,22 @@ void MainWindow::onHostSelectionChanged(int row)
 
     const Host &host = m_visibleHosts[row];
 
+    if (host.offline) {
+        m_trustButton->setEnabled(false);
+        m_mouseControlButton->setEnabled(false);
+        m_fileList->clear();
+        return;
+    }
+
     if (!host.trusted) {
         m_trustButton->setEnabled(true);
         return;
     }
 
+
     m_trustButton->setEnabled(false);
-
     m_mouseControlButton->setEnabled(true);
-
     m_currentPath = "/";
-
     updateFileList();
 }
 
@@ -287,6 +329,10 @@ void MainWindow::onListingFinished(const QString &path, const QStringList &names
 
 void MainWindow::onFileItemDoubleClicked(QListWidgetItem *item)
 {
+    if (currentHost().offline) {
+        return;
+    }
+
     Q_ASSERT(item && !item->text().isEmpty());
 
     const QString filename = item->text();

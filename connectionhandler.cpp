@@ -266,6 +266,8 @@ void ConnectionHandler::onDatagram()
         const QByteArray certEncoded = QByteArray::fromBase64(parts[1]);
 
         Host host;
+        host.lastSeen = QDateTime::currentDateTime();
+        host.offline = false;
         host.name = hostname;
         host.address = sender;
         host.certificate = QSslCertificate(certEncoded, QSsl::Der);

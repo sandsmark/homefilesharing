@@ -53,6 +53,7 @@ private slots:
     void onHostSelectionChanged(int row);
     void onListingFinished(const QString &path, const QStringList &names);
     void onFileItemDoubleClicked(QListWidgetItem *item);
+    void onCleanup();
 
     void onMouseControlClicked();
     void onMouseClickRequested(const QPoint &position, const Qt::MouseButton button);
@@ -67,6 +68,8 @@ private:
     QPushButton *m_trustButton;
     QPushButton *m_mouseControlButton;
     QPointer<Connection> m_currentConnection;
+
+    QPointer<QTimer> m_cleanupTimer;
 
     QListWidget *m_fileList;
 

@@ -98,7 +98,7 @@ RandomArt::RandomArt(const QSslCertificate &cert)
     for (int i=0; i<WIDTH*HEIGHT; i++) {
         m_data[i] = QString::number(m_array[i])[0];
         Q_ASSERT(size_t(m_array[i]) < sizeof(symbols));
-        Q_ASSERT(size_t(m_array[i]) < m_icons.size());
+        Q_ASSERT(size_t(m_array[i]) < size_t(m_icons.size()));
         m_data[i] = symbols[m_array[i]];
     }
 
