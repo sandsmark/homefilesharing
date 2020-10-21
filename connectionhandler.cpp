@@ -30,6 +30,7 @@ ConnectionHandler::ConnectionHandler(QObject *parent) : QTcpServer(parent)
 
     m_pingTimer.setInterval(1000);
     connect(&m_pingTimer, &QTimer::timeout, this, &ConnectionHandler::sendPing);
+    m_pingTimer.setSingleShot(true);
     m_pingTimer.start();
 
     m_pingSocket.bind(PING_PORT, QUdpSocket::ShareAddress);
@@ -268,11 +269,22 @@ void ConnectionHandler::onDatagram()
         host.name = hostname;
         host.address = sender;
         host.certificate = QSslCertificate(certEncoded, QSsl::Der);
+
+        if (host.certificate.isNull()) {
+            qDebug() << "Invalid certificate";
+            continue;
+        }
+
         if (m_trustedHosts.contains(host)) {
             host.trusted = true;
         }
 
         emit pingFromHost(host);
+
+        // respond, do it here because we know it was a semi-valid request
+        if (!m_pingTimer.isActive()) {
+            m_pingTimer.start();
+        }
     }
 }
 
