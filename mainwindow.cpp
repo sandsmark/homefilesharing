@@ -204,6 +204,11 @@ void MainWindow::onPingFromHost(const Host &host)
         return;
     }
 
+    if (m_visibleHosts.count() > 100) {
+        qWarning() << "Too many";
+        return;
+    }
+
     QListWidgetItem *item = new QListWidgetItem(displayName);
     item->setIcon(host.trusted ? QIcon::fromTheme("security-high") : QIcon::fromTheme("security-low"));
     m_list->addItem(item);
