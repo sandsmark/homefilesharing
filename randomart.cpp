@@ -36,8 +36,8 @@ RandomArt::RandomArt(const QSslCertificate &cert)
         return;
     }
     int i=0;
+
     for (const QString &icon : QDir(":/randomicons/").entryList()) {
-        qDebug() << (i++) << icon;
         m_icons.append(QImage(":/randomicons/" + icon));
     }
 
