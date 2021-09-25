@@ -19,7 +19,7 @@ class MouseControlWindow : public QLabel
 
 signals:
     void mouseMoved(const QPoint &position);
-    void mouseClicked(const QPoint &position, const Qt::MouseButton button);
+    void mouseClicked(const QPoint &position, const MouseButton button);
 
 public:
     QPointer<Connection> connection;
@@ -30,7 +30,14 @@ protected:
         emit mouseMoved(event->globalPos());
     }
     void mousePressEvent(QMouseEvent *event) override {
-        emit mouseClicked(event->globalPos(), event->button());
+        emit mouseClicked(event->globalPos(), MouseButton(event->button()));
+    }
+    void wheelEvent(QWheelEvent *event) override {
+        if (event->angleDelta().y() > 0) {
+            emit mouseClicked(event->globalPosition().toPoint(), ScrollUp);
+        } else if (event->angleDelta().y() < 0) {
+            emit mouseClicked(event->globalPosition().toPoint(), ScrollDown);
+        }
     }
     void keyPressEvent(QKeyEvent *event) override {
         if (event->key() == Qt::Key_Escape) {
@@ -56,7 +63,7 @@ private slots:
     void onCleanup();
 
     void onMouseControlClicked();
-    void onMouseClickRequested(const QPoint &position, const Qt::MouseButton button);
+    void onMouseClickRequested(const QPoint &position, const MouseButton button);
 
 private:
     Host currentHost();

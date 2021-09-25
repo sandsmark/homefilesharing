@@ -8,6 +8,7 @@
 #include <QTcpServer>
 
 #include "host.h"
+#include "mousebutton.h"
 
 class Connection;
 class QTcpServer;
@@ -37,7 +38,7 @@ signals:
     void pingFromHost(const Host &host);
 
     void mouseMoveRequested(const QPoint &position);
-    void mouseClickRequested(const QPoint &position, const Qt::MouseButton button);
+    void mouseClickRequested(const QPoint &position, const MouseButton button);
 
 private slots:
     void sendPing();

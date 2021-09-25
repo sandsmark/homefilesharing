@@ -127,21 +127,21 @@ void MainWindow::onMouseControlClicked()
     mouseInputDialog->connection->initiateMouseControl(m_visibleHosts[row]);
 }
 
-void MainWindow::onMouseClickRequested(const QPoint &position, const Qt::MouseButton button)
+void MainWindow::onMouseClickRequested(const QPoint &position, const MouseButton button)
 {
     QCursor::setPos(position);
 
 #ifdef Q_OS_LINUX
     int xButton = 0;
     switch(button) {
-    case Qt::LeftButton:
-        xButton = 1;
+    case LeftButton:
+        xButton = Button1;
         break;
-    case Qt::MidButton:
-        xButton = 2;
+    case MiddleButton:
+        xButton = Button2;
         break;
-    case Qt::RightButton:
-        xButton = 3;
+    case RightButton:
+        xButton = Button3;
         break;
     default:
         qWarning() << "unhandled button" << button;
@@ -161,13 +161,13 @@ void MainWindow::onMouseClickRequested(const QPoint &position, const Qt::MouseBu
 
     // Press
     switch(button) {
-    case Qt::LeftButton:
+    case LeftButton:
         inputEvent.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
         break;
-    case Qt::MidButton:
+    case MidButton:
         inputEvent.mi.dwFlags = MOUSEEVENTF_MIDDLEDOWN;
         break;
-    case Qt::RightButton:
+    case RightButton:
         inputEvent.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
         break;
     default:
@@ -178,13 +178,13 @@ void MainWindow::onMouseClickRequested(const QPoint &position, const Qt::MouseBu
 
     // Release
     switch(button) {
-    case Qt::LeftButton:
+    case LeftButton:
         inputEvent.mi.dwFlags = MOUSEEVENTF_LEFTUP;
         break;
-    case Qt::MidButton:
+    case MidButton:
         inputEvent.mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
         break;
-    case Qt::RightButton:
+    case RightButton:
         inputEvent.mi.dwFlags = MOUSEEVENTF_RIGHTUP;
         break;
     default:

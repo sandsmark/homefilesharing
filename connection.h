@@ -6,6 +6,7 @@
 #include <QSslSocket>
 
 #include "host.h"
+#include "mousebutton.h"
 
 class QSslSocket;
 class QSslKey;
@@ -41,7 +42,7 @@ public:
     QSslSocket *socket() const { return m_socket; }
 
 public slots:
-    void sendMouseClickEvent(const QPoint &position, const Qt::MouseButton button);
+    void sendMouseClickEvent(const QPoint &position, const MouseButton button);
     void sendMouseMoveEvent(const QPoint &position);
 
 signals:
@@ -51,7 +52,7 @@ signals:
     void bytesTransferred(qint64 bytes);
 
     void mouseMoveRequested(const QPoint &position);
-    void mouseClickRequested(const QPoint &position, const Qt::MouseButton button);
+    void mouseClickRequested(const QPoint &position, const MouseButton button);
 
 private slots:
     void onEncrypted();

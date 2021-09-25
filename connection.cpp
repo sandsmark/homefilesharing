@@ -181,7 +181,7 @@ void Connection::onDisconnected()
     deleteLater();
 }
 
-void Connection::sendMouseClickEvent(const QPoint &position, const Qt::MouseButton button)
+void Connection::sendMouseClickEvent(const QPoint &position, const MouseButton button)
 {
     QJsonObject request;
     request["command"] = "mouseclick";
@@ -221,10 +221,12 @@ void Connection::handleMouseCommand(const QString &command, const QJsonObject &d
 
     const int button = data["mousebutton"].toInt(-1);
     switch(button) {
-    case Qt::LeftButton:
-    case Qt::RightButton:
-    case Qt::MiddleButton:
-        emit mouseClickRequested(position, Qt::LeftButton);
+    case LeftButton:
+    case RightButton:
+    case MiddleButton:
+    case ScrollUp:
+    case ScrollDown:
+        emit mouseClickRequested(position, MouseButton(button));
         break;
     default:
         qWarning() << "Unhandled mouse button" << button;
