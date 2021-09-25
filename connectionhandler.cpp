@@ -30,7 +30,6 @@ ConnectionHandler::ConnectionHandler(QObject *parent) : QTcpServer(parent)
 
     m_pingTimer.setInterval(1000);
     connect(&m_pingTimer, &QTimer::timeout, this, &ConnectionHandler::sendPing);
-    m_pingTimer.setSingleShot(true);
     m_pingTimer.start();
 
     m_pingSocket.bind(PING_PORT, QUdpSocket::ShareAddress);
