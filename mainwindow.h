@@ -6,6 +6,7 @@
 #include <QLabel>
 #include <QMouseEvent>
 #include <QWheelEvent>
+#include <QElapsedTimer>
 
 #include "connectionhandler.h"
 #include "connection.h"
@@ -13,6 +14,7 @@
 class QListWidget;
 class QListWidgetItem;
 class QPushButton;
+class QSystemTrayIcon;
 
 class MouseControlWindow : public QLabel
 {
@@ -66,6 +68,8 @@ private slots:
     void onMouseControlClicked();
     void onMouseClickRequested(const QPoint &position, const MouseButton button);
 
+    void updateTrayIcon();
+
 private:
     Host currentHost();
     void updateFileList();
@@ -82,6 +86,10 @@ private:
     QListWidget *m_fileList;
 
     QString m_currentPath;
+    QElapsedTimer m_mouseCommandTimer;
+
+    QSystemTrayIcon *m_tray;
+    QString m_trayIcon;
 };
 
 #endif // MAINWINDOW_H

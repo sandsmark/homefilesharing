@@ -74,6 +74,7 @@ private:
     QString m_remotePath;
     QString m_localPath;
     QString m_basePath;
+
     QPointer<QTimer> m_timeoutTimer;
 };
 

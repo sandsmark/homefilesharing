@@ -14,6 +14,7 @@
 #include <QStandardPaths>
 #include <QFileDialog>
 #include <QCheckBox>
+#include <QSystemTrayIcon>
 
 #ifdef Q_OS_LINUX
     #include <QApplication>
@@ -29,6 +30,9 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
+    m_tray = new QSystemTrayIcon(QIcon::fromTheme("state-offline"), this);
+    m_tray->show();
+
     QSplitter *splitter = new QSplitter;
     setCentralWidget(splitter);
 
@@ -65,6 +69,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(m_list, &QListWidget::currentRowChanged, this, &MainWindow::onHostSelectionChanged);
     connect(m_fileList, &QListWidget::itemDoubleClicked, this, &MainWindow::onFileItemDoubleClicked);
     connect(useIconsCheckbox, &QCheckBox::stateChanged, ourRandomart, &RandomArt::setUseIcons);
+
+    connect(m_tray, &QSystemTrayIcon::activated, this, [this]() { setVisible(!isVisible()); });
 
     connect(m_connectionHandler, &ConnectionHandler::mouseClickRequested, this, &MainWindow::onMouseClickRequested);
     connect(m_connectionHandler, &ConnectionHandler::mouseMoveRequested, this, [](const QPoint &position) {
@@ -129,6 +135,9 @@ void MainWindow::onMouseControlClicked()
 
 void MainWindow::onMouseClickRequested(const QPoint &position, const MouseButton button)
 {
+    m_mouseCommandTimer.restart();
+    updateTrayIcon();
+
     QCursor::setPos(position);
 
 #ifdef Q_OS_LINUX
@@ -249,10 +258,14 @@ void MainWindow::onPingFromHost(const Host &host)
     if (!m_cleanupTimer->isActive()) {
         m_cleanupTimer->start();
     }
+
+    updateTrayIcon();
 }
 
 void MainWindow::onCleanup()
 {
+    updateTrayIcon();
+
     Q_ASSERT(m_visibleHosts.count() == m_list->count());
 
     if (m_visibleHosts.isEmpty()) {
@@ -404,4 +417,29 @@ void MainWindow::updateFileList()
     m_currentConnection = new Connection(m_connectionHandler);
     connect(m_currentConnection, &Connection::listingReceived, this, &MainWindow::onListingFinished);
     m_currentConnection->list(currentHost(), m_currentPath);
+}
+
+void MainWindow::updateTrayIcon()
+{
+    QString trayIcon = "state-offline";
+    if (m_mouseCommandTimer.isValid() && m_mouseCommandTimer.elapsed() < 10000) {
+        trayIcon = "state-warning";
+    } else if (!m_visibleHosts.isEmpty()) {
+        trayIcon = "state-information";
+        for (const Host &host : m_visibleHosts) {
+            if (host.offline) {
+                continue;
+            }
+            if (host.trusted) {
+                trayIcon = "state-ok";
+                break;
+            }
+        }
+    }
+    if (trayIcon == m_trayIcon) {
+        return;
+    }
+    m_trayIcon = trayIcon;
+
+    m_tray->setIcon(QIcon::fromTheme(m_trayIcon));
 }
