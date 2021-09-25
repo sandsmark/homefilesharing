@@ -52,6 +52,8 @@ ConnectionHandler::ConnectionHandler(QObject *parent) : QTcpServer(parent)
     }
 
     listen(QHostAddress::Any, TRANSFER_PORT);
+
+    QMetaObject::invokeMethod(this, &ConnectionHandler::sendPing);
 }
 
 ConnectionHandler::~ConnectionHandler()
@@ -234,6 +236,11 @@ void ConnectionHandler::onDatagram()
         QHostAddress sender;
         m_pingSocket.readDatagram(datagram.data(), datagram.size(), &sender);
 
+        if (!datagram.startsWith(PING_HEADER)) {
+            qDebug() << "Invalid header";
+            continue;
+        }
+
         // Convoluted because QHostAddress doesn't handle ipv6 stuff nicely by default
         bool isOurs = false;
         for (const QHostAddress &address : ourAddresses) {
@@ -245,11 +252,6 @@ void ConnectionHandler::onDatagram()
 
         if (isOurs) {
 //            qDebug() << "Got ping from ourselves";
-            continue;
-        }
-
-        if (!datagram.startsWith(PING_HEADER)) {
-            qDebug() << "Invalid header";
             continue;
         }
 
@@ -282,8 +284,10 @@ void ConnectionHandler::onDatagram()
 
         emit pingFromHost(host);
 
-        // respond, do it here because we know it was a semi-valid request
-        if (!m_pingTimer.isActive()) {
+        if (host.trusted) {
+            // respond, do it here because we know it was an authenticated request so we can't be dosed
+            sendPing();
+            // Delay the next ping
             m_pingTimer.start();
         }
     }

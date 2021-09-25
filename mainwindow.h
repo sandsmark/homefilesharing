@@ -5,6 +5,7 @@
 #include <QPointer>
 #include <QLabel>
 #include <QMouseEvent>
+#include <QWheelEvent>
 
 #include "connectionhandler.h"
 #include "connection.h"
