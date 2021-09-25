@@ -220,15 +220,31 @@ void MainWindow::onPingFromHost(const Host &host)
         return;
     }
 
+    Q_ASSERT(m_visibleHosts.count() == m_list->count());
+
     if (m_visibleHosts.count() > 100) {
         qWarning() << "Too many";
-        return;
+        if (m_visibleHosts.last().trusted) {
+            // full with trusted hosts, can't do anything
+            return;
+        }
+        m_visibleHosts.removeLast();
+        delete m_list->takeItem(m_list->count() - 1);
+        Q_ASSERT(m_visibleHosts.count() == m_list->count());
+    }
+
+    // Insert before the first non-trusted
+    int insertPosition = 0;
+    for (int i=0; i<m_visibleHosts.count(); i++) {
+        if (!m_visibleHosts[i].trusted) {
+            break;
+        }
     }
 
     QListWidgetItem *item = new QListWidgetItem(displayName);
     item->setIcon(host.trusted ? QIcon::fromTheme("security-high") : QIcon::fromTheme("security-low"));
-    m_list->addItem(item);
-    m_visibleHosts.append(host);
+    m_list->insertItem(insertPosition, item);
+    m_visibleHosts.insert(insertPosition, host);
 
     if (!m_cleanupTimer->isActive()) {
         m_cleanupTimer->start();
@@ -237,6 +253,8 @@ void MainWindow::onPingFromHost(const Host &host)
 
 void MainWindow::onCleanup()
 {
+    Q_ASSERT(m_visibleHosts.count() == m_list->count());
+
     if (m_visibleHosts.isEmpty()) {
         return;
     }
