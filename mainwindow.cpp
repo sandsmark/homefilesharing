@@ -143,6 +143,12 @@ void MainWindow::onMouseClickRequested(const QPoint &position, const MouseButton
     case RightButton:
         xButton = Button3;
         break;
+    case ScrollUp:
+        xButton = Button4;
+        break;
+    case ScrollDown:
+        xButton = Button5;
+        break;
     default:
         qWarning() << "unhandled button" << button;
         return;
